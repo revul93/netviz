@@ -1,0 +1,3873 @@
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>netviz — Network Diagram Automation & Documentation</title>
+
+<!-- External libraries (CDN). App works offline after first load via browser cache.
+     Core libs from cdnjs; the fCoSE dependency chain + expand-collapse are not published
+     on cdnjs, so they load from jsDelivr (see README "Dependencies"). -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.30.2/cytoscape.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/layout-base@2.0.1/layout-base.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cose-base@2.2.0/cose-base.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cytoscape-fcose@2.2.0/cytoscape-fcose.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/cytoscape-expand-collapse@4.1.1/cytoscape-expand-collapse.js"></script>
+
+<style>
+  :root {
+    --bg: #0e1116;
+    --bg2: #161b22;
+    --bg3: #1c2230;
+    --panel: #171d27;
+    --panel2: #1f2733;
+    --border: #2a3342;
+    --border2: #39445a;
+    --text: #e6e9ef;
+    --text2: #9aa4b2;
+    --text3: #6b7686;
+    --accent: #4d9fff;
+    --accent2: #2b7de0;
+    --danger: #ef5350;
+    --warn: #ffb74d;
+    --ok: #66bb6a;
+    --shadow: 0 8px 30px rgba(0, 0, 0, 0.55);
+    --radius: 8px;
+    --tb-h: 46px;
+  }
+  body.light {
+    --bg: #f4f6fa;
+    --bg2: #ffffff;
+    --bg3: #eef1f6;
+    --panel: #ffffff;
+    --panel2: #f4f6fa;
+    --border: #d7dde7;
+    --border2: #c2cad6;
+    --text: #1a2230;
+    --text2: #5a6472;
+    --text3: #8b95a4;
+    --accent: #2b7de0;
+    --accent2: #1f6ad0;
+    --shadow: 0 8px 30px rgba(20, 30, 50, 0.18);
+  }
+  * {
+    box-sizing: border-box;
+  }
+  html,
+  body {
+    height: 100%;
+    margin: 0;
+  }
+  body {
+    font-family:
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      "Segoe UI",
+      Roboto,
+      Helvetica,
+      Arial,
+      sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+    font-size: 13px;
+  }
+  button {
+    font-family: inherit;
+    cursor: pointer;
+  }
+  input,
+  select,
+  textarea {
+    font-family: inherit;
+    font-size: 13px;
+  }
+
+  /* ---- Toolbar ---- */
+  #toolbar {
+    height: var(--tb-h);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 10px;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    z-index: 40;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    margin-right: 8px;
+    color: var(--text);
+  }
+  .brand svg {
+    width: 22px;
+    height: 22px;
+  }
+  .brand .sub {
+    font-weight: 500;
+    color: var(--text3);
+    font-size: 11px;
+  }
+  .tb-sep {
+    width: 1px;
+    height: 26px;
+    background: var(--border);
+    margin: 0 4px;
+    flex: none;
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    height: 30px;
+    padding: 0 10px;
+    border-radius: 6px;
+    background: var(--bg3);
+    color: var(--text);
+    border: 1px solid var(--border);
+    font-size: 12.5px;
+    flex: none;
+  }
+  .btn:hover {
+    background: var(--panel2);
+    border-color: var(--border2);
+  }
+  .btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  .btn.icon {
+    padding: 0 8px;
+  }
+  .btn svg {
+    width: 15px;
+    height: 15px;
+  }
+  .btn.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  .btn.primary:hover {
+    background: var(--accent2);
+  }
+  .btn.danger {
+    color: var(--danger);
+    border-color: var(--border);
+  }
+  .btn.danger:hover {
+    background: rgba(239, 83, 80, 0.12);
+  }
+  .btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+  .badge {
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 8px;
+    background: var(--warn);
+    color: #221;
+    font-size: 10px;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 2px;
+  }
+  .badge.zero {
+    display: none;
+  }
+  #searchWrap {
+    position: relative;
+    flex: none;
+  }
+  #search {
+    height: 30px;
+    width: 190px;
+    padding: 0 26px 0 28px;
+    border-radius: 6px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    outline: none;
+  }
+  #search:focus {
+    border-color: var(--accent);
+  }
+  #searchWrap .sicon {
+    position: absolute;
+    left: 8px;
+    top: 7px;
+    width: 15px;
+    height: 15px;
+    color: var(--text3);
+  }
+  #searchClear {
+    position: absolute;
+    right: 6px;
+    top: 6px;
+    width: 18px;
+    height: 18px;
+    border: none;
+    background: none;
+    color: var(--text3);
+    display: none;
+  }
+
+  .dropdown {
+    position: relative;
+    flex: none;
+  }
+  .menu {
+    position: absolute;
+    top: 34px;
+    left: 0;
+    min-width: 210px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    padding: 6px;
+    z-index: 60;
+    display: none;
+  }
+  .menu.open {
+    display: block;
+  }
+  .menu.right {
+    right: 0;
+    left: auto;
+  }
+  .menu .mi {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 9px;
+    border-radius: 6px;
+    color: var(--text);
+    cursor: pointer;
+    font-size: 12.5px;
+  }
+  .menu .mi:hover {
+    background: var(--bg3);
+  }
+  .menu .mi.check::before {
+    content: "";
+    width: 14px;
+    height: 14px;
+    border: 1px solid var(--border2);
+    border-radius: 3px;
+    flex: none;
+  }
+  .menu .mi.check.on::before {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .menu .mhead {
+    padding: 6px 9px 4px;
+    color: var(--text3);
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+  }
+  .menu .msep {
+    height: 1px;
+    background: var(--border);
+    margin: 5px 2px;
+  }
+
+  /* ---- Layout ---- */
+  #main {
+    position: absolute;
+    top: var(--tb-h);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+  }
+  #cyWrap {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+  }
+  #cy {
+    position: absolute;
+    inset: 0;
+    background: var(--bg);
+  }
+  body.light #cy {
+    background: #fbfcfe;
+  }
+
+  /* ---- Legend ---- */
+  #legend {
+    position: absolute;
+    left: 12px;
+    bottom: 12px;
+    width: 250px;
+    max-height: calc(100% - 24px);
+    overflow: auto;
+    background: rgba(23, 29, 39, 0.92);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    backdrop-filter: blur(6px);
+    font-size: 11.5px;
+    z-index: 15;
+  }
+  body.light #legend {
+    background: rgba(255, 255, 255, 0.94);
+  }
+  #legend h4 {
+    margin: 0 0 6px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--text2);
+    display: flex;
+    justify-content: space-between;
+  }
+  #legend .lrow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 3px 0;
+    color: var(--text2);
+  }
+  #legend .lline {
+    width: 34px;
+    height: 0;
+    flex: none;
+  }
+  #legend .lg-sec {
+    margin-top: 8px;
+  }
+  #legend .swatch {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    flex: none;
+  }
+  .legend-hidden #legend {
+    display: none;
+  }
+
+  /* ---- Minimap-ish status bar ---- */
+  #statusbar {
+    position: absolute;
+    right: 12px;
+    bottom: 12px;
+    background: rgba(23, 29, 39, 0.9);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 11px;
+    color: var(--text2);
+    z-index: 15;
+  }
+  body.light #statusbar {
+    background: rgba(255, 255, 255, 0.92);
+  }
+
+  /* ---- Tooltip ---- */
+  #tooltip {
+    position: fixed;
+    pointer-events: none;
+    z-index: 200;
+    background: var(--panel);
+    border: 1px solid var(--border2);
+    border-radius: 7px;
+    padding: 8px 10px;
+    font-size: 11.5px;
+    box-shadow: var(--shadow);
+    max-width: 280px;
+    display: none;
+    color: var(--text);
+  }
+  #tooltip .tt-title {
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  #tooltip .tt-row {
+    display: flex;
+    gap: 6px;
+    color: var(--text2);
+  }
+  #tooltip .tt-row b {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  /* ---- Side detail panel ---- */
+  #panel {
+    width: 340px;
+    flex: none;
+    background: var(--panel);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    transform: translateX(100%);
+    transition: transform 0.18s ease;
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 30;
+    box-shadow: var(--shadow);
+  }
+  #panel.open {
+    transform: translateX(0);
+  }
+  .panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .panel-head h3 {
+    margin: 0;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .panel-head .ptype {
+    font-size: 11px;
+    color: var(--text3);
+    font-weight: 500;
+  }
+  .panel-body {
+    padding: 12px 14px;
+    overflow: auto;
+    flex: 1;
+  }
+  .panel-foot {
+    padding: 10px 14px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 8px;
+  }
+  .field {
+    margin-bottom: 10px;
+  }
+  .field label {
+    display: block;
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text3);
+    margin-bottom: 3px;
+  }
+  .field input,
+  .field select,
+  .field textarea {
+    width: 100%;
+    padding: 7px 8px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    outline: none;
+  }
+  .field input:focus,
+  .field select:focus,
+  .field textarea:focus {
+    border-color: var(--accent);
+  }
+  .field textarea {
+    resize: vertical;
+    min-height: 52px;
+  }
+  .field.two {
+    display: flex;
+    gap: 8px;
+  }
+  .field.two > div {
+    flex: 1;
+  }
+  .close-x {
+    border: none;
+    background: none;
+    color: var(--text3);
+    width: 26px;
+    height: 26px;
+    border-radius: 5px;
+    font-size: 18px;
+    line-height: 1;
+  }
+  .close-x:hover {
+    background: var(--bg3);
+    color: var(--text);
+  }
+
+  /* ---- Modal ---- */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(4, 7, 12, 0.6);
+    z-index: 100;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .overlay.open {
+    display: flex;
+  }
+  .modal {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: var(--shadow);
+    width: 640px;
+    max-width: 100%;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+  }
+  .modal.wide {
+    width: 820px;
+  }
+  .modal-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+  }
+  .modal-head h3 {
+    margin: 0;
+    font-size: 15px;
+  }
+  .modal-body {
+    padding: 16px 18px;
+    overflow: auto;
+  }
+  .modal-foot {
+    padding: 12px 18px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+  table.grid {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+  table.grid th,
+  table.grid td {
+    border: 1px solid var(--border);
+    padding: 5px 7px;
+    text-align: left;
+  }
+  table.grid th {
+    background: var(--bg3);
+    color: var(--text2);
+    font-weight: 600;
+  }
+  .map-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+  .map-row .col-name {
+    color: var(--text2);
+  }
+  .hint {
+    color: var(--text3);
+    font-size: 11.5px;
+    margin: 6px 0;
+  }
+  .pill {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 10px;
+    font-size: 10.5px;
+    background: var(--bg3);
+    color: var(--text2);
+    border: 1px solid var(--border);
+  }
+  .issues-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .issues-list li {
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    margin-bottom: 6px;
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+  }
+  .issues-list li .sev {
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 9.5px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    flex: none;
+    margin-top: 1px;
+  }
+  .sev.warn {
+    background: rgba(255, 183, 77, 0.18);
+    color: var(--warn);
+  }
+  .sev.error {
+    background: rgba(239, 83, 80, 0.18);
+    color: var(--danger);
+  }
+  .sev.info {
+    background: rgba(77, 159, 255, 0.18);
+    color: var(--accent);
+  }
+  .filter-group {
+    margin-bottom: 12px;
+  }
+  .filter-group h5 {
+    margin: 0 0 6px;
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text3);
+  }
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .chip {
+    padding: 4px 9px;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text2);
+    cursor: pointer;
+    font-size: 11.5px;
+  }
+  .chip.on {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  #contextMenu {
+    position: fixed;
+    z-index: 150;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    padding: 5px;
+    display: none;
+    min-width: 170px;
+  }
+  #contextMenu .mi {
+    display: flex;
+    gap: 8px;
+    padding: 7px 9px;
+    border-radius: 6px;
+    font-size: 12.5px;
+  }
+  #contextMenu .mi:hover {
+    background: var(--bg3);
+  }
+  #bulkBar {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    top: 12px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    box-shadow: var(--shadow);
+    padding: 8px 12px;
+    z-index: 25;
+    display: none;
+    align-items: center;
+    gap: 8px;
+  }
+  #bulkBar select {
+    padding: 5px 6px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    color: var(--text);
+  }
+  #drawHint {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    top: 12px;
+    background: var(--accent);
+    color: #fff;
+    border-radius: 9px;
+    padding: 8px 14px;
+    z-index: 25;
+    display: none;
+    font-weight: 600;
+    box-shadow: var(--shadow);
+  }
+  .toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--panel);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 10px 16px;
+    box-shadow: var(--shadow);
+    z-index: 300;
+    display: none;
+    color: var(--text);
+  }
+  .toast.err {
+    border-color: var(--danger);
+  }
+  .kbd {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-size: 11px;
+    font-family: ui-monospace, monospace;
+  }
+  .file-hidden {
+    display: none;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border2);
+    border-radius: 5px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+</style>
+
+<!-- ===================== MARKUP ===================== -->
+<div id="toolbar">
+  <div class="brand">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="#4d9fff"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    >
+      <circle cx="5" cy="6" r="2.4" />
+      <circle cx="19" cy="6" r="2.4" />
+      <circle cx="12" cy="18" r="2.4" />
+      <path d="M5 8.4v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3" />
+      <path d="M12 13.4v2.2" />
+    </svg>
+    netviz <span class="sub">v1.0</span>
+  </div>
+  <div class="tb-sep"></div>
+  <button class="btn" id="btnNew">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 5v14M5 12h14" /></svg
+    >New
+  </button>
+  <button class="btn" id="btnOpen">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M3 7h6l2 2h10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></svg
+    >Open
+  </button>
+  <button class="btn" id="btnSave">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M5 3h11l3 3v15H5z" />
+      <path d="M8 3v5h7" /></svg
+    >Save
+  </button>
+  <button class="btn" id="btnImport">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 15V3M8 7l4-4 4 4" />
+      <path d="M4 15v4h16v-4" /></svg
+    >Import CSV
+  </button>
+  <div class="dropdown">
+    <button class="btn" id="btnExport">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <path d="M12 3v12M8 11l4 4 4-4" />
+        <path d="M4 21h16" /></svg
+      >Export ▾
+    </button>
+    <div class="menu" id="exportMenu">
+      <div class="mhead">Image</div>
+      <div class="mi" data-exp="png1">PNG · 1×</div>
+      <div class="mi" data-exp="png2">PNG · 2×</div>
+      <div class="mi" data-exp="png4">PNG · 4× (hi-res)</div>
+      <div class="mi" data-exp="jpg">JPEG</div>
+      <div class="msep"></div>
+      <div class="mi check" id="expTransparent" data-toggle="transparent">
+        Transparent background
+      </div>
+      <div class="mi check on" id="expTitle" data-toggle="titleblock">
+        Include title block
+      </div>
+      <div class="mi check on" id="expLegendBake" data-toggle="legendbake">
+        Include legend
+      </div>
+      <div class="msep"></div>
+      <div class="mhead">Data</div>
+      <div class="mi" data-exp="json">Project JSON</div>
+      <div class="mi" data-exp="yaml">Project YAML</div>
+      <div class="mi" data-exp="csv">CSV (nodes + links)</div>
+      <div class="msep"></div>
+      <div class="mhead">Documentation</div>
+      <div class="mi" data-exp="report">HTML report</div>
+    </div>
+  </div>
+  <div class="tb-sep"></div>
+  <button class="btn" id="btnAddNode">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <rect x="4" y="7" width="10" height="10" rx="2" />
+      <path d="M18 10v6M15 13h6" /></svg
+    >Add Node
+  </button>
+  <button class="btn" id="btnDrawLink">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="6" cy="6" r="2.5" />
+      <circle cx="18" cy="18" r="2.5" />
+      <path d="M8 8l8 8" /></svg
+    >Draw Link
+  </button>
+  <div class="dropdown">
+    <button class="btn" id="btnLayout">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <circle cx="6" cy="6" r="2" />
+        <circle cx="18" cy="6" r="2" />
+        <circle cx="12" cy="18" r="2" />
+        <path d="M6 8v2a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8M12 14v2" /></svg
+      >Layout ▾
+    </button>
+    <div class="menu" id="layoutMenu">
+      <div class="mi" data-layout="fcose">Force-directed (fCoSE)</div>
+      <div class="mi" data-layout="hierarchy">Hierarchical (by layer)</div>
+      <div class="mi" data-layout="circle-site">Circular per site</div>
+      <div class="mi" data-layout="grid">Grid</div>
+      <div class="msep"></div>
+      <div class="mi" data-layout="manual">Keep manual positions</div>
+    </div>
+  </div>
+  <button class="btn" id="btnGroup">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="M3 9h18" /></svg
+    >Group by Site
+  </button>
+  <button class="btn" id="btnFit">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg
+    >Fit
+  </button>
+  <div class="tb-sep"></div>
+  <div id="searchWrap">
+    <svg
+      class="sicon"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+    >
+      <circle cx="11" cy="11" r="7" />
+      <path d="M21 21l-4-4" />
+    </svg>
+    <input id="search" placeholder="Search  (/)" />
+    <button id="searchClear">✕</button>
+  </div>
+  <button class="btn" id="btnFilters">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M4 5h16l-6 8v5l-4 2v-7z" /></svg
+    >Filters<span class="badge zero" id="filterBadge">0</span>
+  </button>
+  <div class="dropdown">
+    <button class="btn" id="btnOverlay">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <path d="M3 12l9-6 9 6-9 6z" />
+        <path d="M3 16l9 6 9-6" /></svg
+      >Overlay ▾
+    </button>
+    <div class="menu" id="overlayMenu">
+      <div class="mi" data-overlay="combined">Combined (all)</div>
+      <div class="mi" data-overlay="physical">Physical only</div>
+      <div class="mi" data-overlay="tunnels">Tunnels only</div>
+      <div class="msep"></div>
+      <div class="mi check" id="ovVlan" data-toggle="vlancolor">
+        VLAN coloring
+      </div>
+      <div class="mi check" id="ovDecom" data-toggle="showdecom">
+        Show decommissioned
+      </div>
+    </div>
+  </div>
+  <div class="tb-sep"></div>
+  <button class="btn icon" id="btnLegend" title="Toggle legend">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="M7 9h4M7 13h4M15 9h2M15 13h2" />
+    </svg>
+  </button>
+  <button class="btn icon" id="btnTheme" title="Toggle theme">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
+    </svg>
+  </button>
+  <div class="tb-sep"></div>
+  <button class="btn icon" id="btnUndo" title="Undo (Ctrl+Z)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M9 7L4 12l5 5" />
+      <path d="M4 12h11a5 5 0 0 1 0 10h-1" />
+    </svg>
+  </button>
+  <button class="btn icon" id="btnRedo" title="Redo (Ctrl+Y)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M15 7l5 5-5 5" />
+      <path d="M20 12H9a5 5 0 0 0 0 10h1" />
+    </svg>
+  </button>
+  <button class="btn" id="btnIssues">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 3l9 16H3z" />
+      <path d="M12 10v4M12 17h.01" /></svg
+    >Issues<span class="badge zero" id="issueBadge">0</span>
+  </button>
+  <button class="btn icon" id="btnSettings" title="Settings">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="3" />
+      <path
+        d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.4-2.3 1a7 7 0 0 0-1.7-1L14.5 3h-5l-.4 2.6a7 7 0 0 0-1.7 1l-2.3-1-2 3.4 2 1.5a7 7 0 0 0 0 2l-2 1.5 2 3.4 2.3-1a7 7 0 0 0 1.7 1l.4 2.6h5l.4-2.6a7 7 0 0 0 1.7-1l2.3 1 2-3.4-2-1.5c.1-.3.1-.7.1-1z"
+      />
+    </svg>
+  </button>
+</div>
+
+<div id="main">
+  <div id="cyWrap">
+    <div id="cy"></div>
+    <div id="drawHint">
+      Draw-Link mode: click a source node, then a target node. Press Esc to
+      cancel.
+    </div>
+    <div id="bulkBar">
+      <span id="bulkCount">0 selected</span>
+      <select id="bulkField">
+        <option value="">Bulk edit…</option>
+        <option value="site">Site</option>
+        <option value="layer">Layer</option>
+        <option value="type">Type</option>
+        <option value="vendor">Vendor</option>
+      </select>
+      <input
+        id="bulkValue"
+        placeholder="value"
+        style="
+          width: 120px;
+          padding: 5px 6px;
+          background: var(--bg);
+          border: 1px solid var(--border);
+          border-radius: 5px;
+          color: var(--text);
+        "
+      />
+      <button class="btn primary" id="bulkApply">Apply</button>
+      <button class="btn danger" id="bulkDelete">Delete</button>
+    </div>
+    <div id="legend"></div>
+    <div id="statusbar">—</div>
+  </div>
+  <div id="panel"></div>
+</div>
+
+<div id="tooltip"></div>
+<div id="contextMenu"></div>
+<div class="toast" id="toast"></div>
+
+<!-- Import wizard -->
+<div class="overlay" id="importOverlay">
+  <div class="modal wide">
+    <div class="modal-head">
+      <h3>Import CSV</h3>
+      <button class="close-x" data-close="importOverlay">×</button>
+    </div>
+    <div class="modal-body" id="importBody"></div>
+    <div class="modal-foot" id="importFoot"></div>
+  </div>
+</div>
+
+<!-- Issues panel -->
+<div class="overlay" id="issuesOverlay">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Validation Issues</h3>
+      <button class="close-x" data-close="issuesOverlay">×</button>
+    </div>
+    <div class="modal-body" id="issuesBody"></div>
+    <div class="modal-foot">
+      <button class="btn" data-close="issuesOverlay">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Filters panel -->
+<div class="overlay" id="filtersOverlay">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Filters</h3>
+      <button class="close-x" data-close="filtersOverlay">×</button>
+    </div>
+    <div class="modal-body" id="filtersBody"></div>
+    <div class="modal-foot">
+      <button class="btn" id="filtersClear">Clear all</button
+      ><button class="btn primary" data-close="filtersOverlay">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- Settings -->
+<div class="overlay" id="settingsOverlay">
+  <div class="modal wide">
+    <div class="modal-head">
+      <h3>Settings</h3>
+      <button class="close-x" data-close="settingsOverlay">×</button>
+    </div>
+    <div class="modal-body" id="settingsBody"></div>
+    <div class="modal-foot">
+      <button class="btn" data-close="settingsOverlay">Close</button>
+    </div>
+  </div>
+</div>
+
+<input
+  type="file"
+  id="fileProject"
+  class="file-hidden"
+  accept=".json,.yaml,.yml"
+/>
+<input type="file" id="fileCsv" class="file-hidden" accept=".csv" multiple />
+<input type="file" id="fileIcon" class="file-hidden" accept="image/*" />
+
+<script>
+  "use strict";
+  /* ============================================================================
+   netviz — single-file network documentation tool
+   ========================================================================== */
+  (function () {
+    /* ---------- Enums ---------- */
+    const NODE_TYPES = [
+      "router",
+      "l3-switch",
+      "l2-switch",
+      "firewall",
+      "server",
+      "hypervisor",
+      "access-point",
+      "wlc",
+      "load-balancer",
+      "storage",
+      "camera",
+      "printer",
+      "workstation",
+      "cloud",
+      "internet",
+      "isp",
+      "unknown",
+    ];
+    const LAYERS = ["core", "distribution", "access", "edge", "dmz", "wan"];
+    const SPEEDS = ["10M", "100M", "1G", "10G", "25G", "40G", "100G"];
+    const MEDIA = [
+      "copper",
+      "fiber-sm",
+      "fiber-mm",
+      "dac",
+      "wireless",
+      "serial",
+      "virtual",
+    ];
+    const LINK_TYPES = [
+      "physical",
+      "lag",
+      "ipsec",
+      "gre",
+      "mpls",
+      "sdwan",
+      "vpn-client",
+      "vxlan",
+      "logical",
+    ];
+    const TUNNEL_TYPES = [
+      "ipsec",
+      "gre",
+      "mpls",
+      "sdwan",
+      "vpn-client",
+      "vxlan",
+      "logical",
+    ];
+    const STP_STATES = ["forwarding", "blocked", "n/a"];
+    const STATUSES = ["up", "down", "planned", "decommissioned"];
+
+    const MEDIA_STYLE = {
+      copper: { color: "#9aa0a6", style: "solid" },
+      "fiber-sm": { color: "#fbbc04", style: "solid" },
+      "fiber-mm": { color: "#ff8a00", style: "solid" },
+      dac: { color: "#00bfa5", style: "solid" },
+      wireless: { color: "#4d9fff", style: "dashed" },
+      serial: { color: "#b39ddb", style: "dashdot" },
+      virtual: { color: null, style: "dotted" },
+    };
+    const TUNNEL_COLOR = {
+      ipsec: "#ab47bc",
+      gre: "#8d6e63",
+      mpls: "#66bb6a",
+      sdwan: "#26c6da",
+      "vpn-client": "#ec407a",
+      vxlan: "#7e57c2",
+      logical: "#78909c",
+    };
+    const SPEED_WIDTH = {
+      "10M": 1.5,
+      "100M": 1.5,
+      "1G": 2.5,
+      "10G": 4,
+      "25G": 5,
+      "40G": 6,
+      "100G": 8,
+    };
+    const TYPE_ACCENT = {
+      router: "#4d9fff",
+      "l3-switch": "#26c6da",
+      "l2-switch": "#66bb6a",
+      firewall: "#ef5350",
+      server: "#ffca28",
+      hypervisor: "#ab47bc",
+      "access-point": "#26a69a",
+      wlc: "#26a69a",
+      "load-balancer": "#ff8a65",
+      storage: "#8d6e63",
+      camera: "#78909c",
+      printer: "#78909c",
+      workstation: "#90a4ae",
+      cloud: "#b0bec5",
+      internet: "#4dd0e1",
+      isp: "#4dd0e1",
+      unknown: "#9e9e9e",
+    };
+
+    /* ---------- Icon set (inline SVG data URIs) ---------- */
+    function mkIcon(inner) {
+      const svg =
+        "<svg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48' fill='none' stroke='#d7dae0' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'>" +
+        inner +
+        "</svg>";
+      // base64 (rather than URL-encoded) data URIs rasterize reliably on the Cytoscape canvas
+      return "data:image/svg+xml;base64," + btoa(svg);
+    }
+    const GLYPH = {
+      router: (a) =>
+        `<circle cx='24' cy='24' r='10'/><path stroke='${a}' d='M24 6v6M24 36v6M6 24h6M36 24h6'/>`,
+      "l3-switch": (a) =>
+        `<rect x='7' y='16' width='34' height='16' rx='2'/><path stroke='${a}' d='M13 24h22M29 20l6 4-6 4M19 20l-6 4 6 4'/>`,
+      "l2-switch": (a) =>
+        `<rect x='7' y='16' width='34' height='16' rx='2'/><path stroke='${a}' d='M13 21h22M13 27h22M31 18l4 3-4 3M17 24l-4 3 4 3'/>`,
+      firewall: (a) =>
+        `<rect x='8' y='12' width='32' height='24' rx='2'/><path stroke='${a}' d='M8 20h32M8 28h32M18 12v8M30 20v8M18 28v8M30 12v8'/>`,
+      server: (a) =>
+        `<rect x='12' y='8' width='24' height='32' rx='2'/><path d='M17 16h14M17 24h14M17 32h14'/><circle cx='31' cy='16' r='1.4' fill='${a}' stroke='none'/><circle cx='31' cy='24' r='1.4' fill='${a}' stroke='none'/><circle cx='31' cy='32' r='1.4' fill='${a}' stroke='none'/>`,
+      hypervisor: (a) =>
+        `<rect x='7' y='10' width='34' height='28' rx='2'/><rect x='12' y='15' width='9' height='7' stroke='${a}'/><rect x='27' y='15' width='9' height='7' stroke='${a}'/><rect x='12' y='27' width='9' height='7'/><rect x='27' y='27' width='9' height='7'/>`,
+      "access-point": (a) =>
+        `<rect x='16' y='30' width='16' height='9' rx='2'/><path stroke='${a}' d='M13 24a15 15 0 0 1 22 0M18 28a8 8 0 0 1 12 0'/><circle cx='24' cy='34' r='1.6' fill='${a}' stroke='none'/>`,
+      wlc: (a) =>
+        `<rect x='8' y='13' width='32' height='22' rx='2'/><path stroke='${a}' d='M16 27a8 8 0 0 1 16 0'/><circle cx='24' cy='27' r='1.5' fill='${a}' stroke='none'/><path d='M12 18h7'/>`,
+      "load-balancer": (a) =>
+        `<rect x='8' y='13' width='32' height='22' rx='2'/><path stroke='${a}' d='M24 31V17M24 17l-8 8M24 17l8 8'/>`,
+      storage: (a) =>
+        `<path d='M12 14c0-3.3 24-3.3 24 0v20c0 3.3-24 3.3-24 0z'/><path stroke='${a}' d='M12 14c0 3.3 24 3.3 24 0'/><path d='M12 22c0 3.3 24 3.3 24 0M12 30c0 3.3 24 3.3 24 0'/>`,
+      camera: (a) =>
+        `<rect x='7' y='16' width='23' height='13' rx='2'/><path d='M30 20l9-4v16l-9-4z'/><circle cx='14' cy='22.5' r='2.4' stroke='${a}'/>`,
+      printer: (a) =>
+        `<path d='M14 20V9h20v11'/><rect x='8' y='20' width='32' height='13' rx='2'/><rect x='15' y='27' width='18' height='11'/><circle cx='34' cy='25' r='1.5' fill='${a}' stroke='none'/>`,
+      workstation: (a) =>
+        `<rect x='7' y='9' width='34' height='21' rx='2'/><path d='M20 30v6M28 30v6M15 40h18'/><path stroke='${a}' d='M13 16h13'/>`,
+      cloud: (a) =>
+        `<path d='M16 34a8 8 0 0 1 0-16 10 10 0 0 1 19 3 6.5 6.5 0 0 1-1 13z'/><path stroke='${a}' d='M18 27h12'/>`,
+      internet: (a) =>
+        `<circle cx='24' cy='24' r='14'/><path stroke='${a}' d='M10 24h28M24 10v28'/><path d='M24 10c6.5 4 6.5 24 0 28M24 10c-6.5 4-6.5 24 0 28'/>`,
+      isp: (a) =>
+        `<rect x='8' y='8' width='32' height='32' rx='3'/><circle cx='24' cy='24' r='9' stroke='${a}'/><path stroke='${a}' d='M15 24h18M24 15v18'/>`,
+      unknown: (a) =>
+        `<rect x='10' y='10' width='28' height='28' rx='4'/><path stroke='${a}' d='M20 20a4 4 0 1 1 6 3.3c-1.5 1-2 2-2 3.7'/><circle cx='24' cy='32' r='1.5' fill='${a}' stroke='none'/>`,
+    };
+    const ICONS = {};
+    NODE_TYPES.forEach((t) => {
+      ICONS[t] = mkIcon(GLYPH[t](TYPE_ACCENT[t]));
+    });
+    // Warm the browser image cache so Cytoscape rasterizes icons on first paint (avoids a blank-node flash / empty exports).
+    const _iconCache = [];
+    function preloadIcons(uris) {
+      (uris || Object.values(ICONS)).forEach((uri) => {
+        const im = new Image();
+        im.src = uri;
+        _iconCache.push(im);
+      });
+    }
+
+    /* ---------- Utilities ---------- */
+    const $ = (s) => document.querySelector(s);
+    const $$ = (s) => Array.from(document.querySelectorAll(s));
+    function esc(s) {
+      return String(s == null ? "" : s).replace(
+        /[&<>"']/g,
+        (c) =>
+          ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;",
+          })[c],
+      );
+    }
+    function slug(s) {
+      return String(s || "")
+        .trim()
+        .replace(/\s+/g, "-")
+        .replace(/[^A-Za-z0-9._:-]/g, "")
+        .slice(0, 64);
+    }
+    let _idc = 0;
+    function uid(p) {
+      _idc++;
+      return (
+        (p || "id") + "-" + Date.now().toString(36) + "-" + _idc.toString(36)
+      );
+    }
+    function clone(o) {
+      return JSON.parse(JSON.stringify(o));
+    }
+    function toast(msg, isErr) {
+      const t = $("#toast");
+      t.textContent = msg;
+      t.className = "toast" + (isErr ? " err" : "");
+      t.style.display = "block";
+      clearTimeout(toast._t);
+      toast._t = setTimeout(() => (t.style.display = "none"), 2600);
+    }
+    function download(filename, content, mime) {
+      const blob =
+        content instanceof Blob
+          ? content
+          : new Blob([content], { type: mime || "application/octet-stream" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+    }
+    function coerceEnum(v, list, fallback) {
+      if (v == null || v === "") return fallback;
+      const s = String(v).trim().toLowerCase();
+      const hit = list.find((x) => x.toLowerCase() === s);
+      return hit !== undefined ? hit : null;
+    }
+
+    /* ---------- State ---------- */
+    const AppState = {
+      project: null,
+      ui: {
+        theme: "dark",
+        layout: "fcose",
+        overlay: "combined",
+        vlanColoring: false,
+        showDecom: false,
+        grouped: false,
+        legendVisible: true,
+        search: "",
+        selectedId: null,
+        selectedGroup: null,
+        filters: {
+          site: [],
+          layer: [],
+          link_type: [],
+          vlan: [],
+          media: [],
+          status: [],
+        },
+        drawMode: false,
+        drawSource: null,
+        exportOpts: { transparent: false, titleblock: true, legendbake: true },
+      },
+      undo: [],
+      redo: [],
+      cy: null,
+      issues: [],
+    };
+
+    function emptyProject() {
+      const now = new Date().toISOString();
+      return {
+        meta: {
+          name: "Untitled Network",
+          schema_version: 1,
+          author: "",
+          created: now,
+          modified: now,
+        },
+        settings: {
+          theme: "dark",
+          layout: "fcose",
+          icon_map: {},
+          custom_icons: {},
+        },
+        nodes: [],
+        links: [],
+        groups: [],
+      };
+    }
+
+    /* ---------- Normalization ----------
+   Coercion notes are recorded on the object's `_warn` array so they persist into the
+   validation panel (they can't be re-derived once the bad value has been coerced away). */
+    function normNode(raw, warnings) {
+      const n = {},
+        w = [];
+      n.name = String(raw.name || raw.id || "").trim();
+      n.id = raw.id ? slug(raw.id) : slug(n.name) || uid("n");
+      if (!n.name) n.name = n.id;
+      n.type = coerceEnum(raw.type, NODE_TYPES, null);
+      if (n.type === null) {
+        if (raw.type)
+          w.push(
+            `Node "${n.name}": unknown type "${raw.type}" → coerced to unknown`,
+          );
+        n.type = "unknown";
+      }
+      n.mgmt_ip = (raw.mgmt_ip || "").trim();
+      n.site = (raw.site || "").trim();
+      n.layer = coerceEnum(raw.layer, LAYERS, "");
+      if (n.layer === null) {
+        if (raw.layer)
+          w.push(`Node "${n.name}": unknown layer "${raw.layer}" ignored`);
+        n.layer = "";
+      }
+      n.vendor = (raw.vendor || "").trim();
+      n.model = (raw.model || "").trim();
+      n.icon = (raw.icon || "").trim();
+      n.notes = (raw.notes || "").trim();
+      n.x = raw.x === 0 || raw.x ? Number(raw.x) : null;
+      n.y = raw.y === 0 || raw.y ? Number(raw.y) : null;
+      if (isNaN(n.x)) n.x = null;
+      if (isNaN(n.y)) n.y = null;
+      if (w.length) {
+        n._warn = w;
+        if (warnings) w.forEach((m) => warnings.push({ sev: "warn", msg: m }));
+      }
+      return n;
+    }
+    function normLink(raw, warnings) {
+      const l = {},
+        w = [];
+      l.source = String(raw.source || "").trim();
+      l.target = String(raw.target || "").trim();
+      l.id = raw.id ? slug(raw.id) : "";
+      l.source_if = (raw.source_if || "").trim();
+      l.target_if = (raw.target_if || "").trim();
+      l.speed = coerceEnum(raw.speed, SPEEDS, "") || "";
+      if (raw.speed && l.speed === "" && String(raw.speed).trim()) {
+        w.push(
+          `Link ${l.source}→${l.target}: unknown speed "${raw.speed}" ignored`,
+        );
+      }
+      l.media = coerceEnum(raw.media, MEDIA, null);
+      if (l.media === null) {
+        if (raw.media)
+          w.push(
+            `Link ${l.source}→${l.target}: unknown media "${raw.media}" → coerced to copper`,
+          );
+        l.media = "copper";
+      }
+      l.link_type = coerceEnum(raw.link_type, LINK_TYPES, null);
+      if (l.link_type === null) {
+        if (raw.link_type)
+          w.push(
+            `Link ${l.source}→${l.target}: unknown link_type "${raw.link_type}" → coerced to physical`,
+          );
+        l.link_type = "physical";
+      }
+      l.stp_state = coerceEnum(raw.stp_state, STP_STATES, null);
+      if (l.stp_state === null) {
+        if (raw.stp_state)
+          w.push(
+            `Link ${l.source}→${l.target}: unknown stp_state "${raw.stp_state}" → coerced to n/a`,
+          );
+        l.stp_state = "n/a";
+      }
+      l.vlan = (raw.vlan == null ? "" : String(raw.vlan)).trim();
+      l.subnet = (raw.subnet || "").trim();
+      l.status = coerceEnum(raw.status, STATUSES, null);
+      if (l.status === null) {
+        if (raw.status)
+          w.push(
+            `Link ${l.source}→${l.target}: unknown status "${raw.status}" → coerced to up`,
+          );
+        l.status = "up";
+      }
+      l.bandwidth_committed = (raw.bandwidth_committed || "").trim();
+      l.provider = (raw.provider || "").trim();
+      l.circuit_id = (raw.circuit_id || "").trim();
+      l.description = (raw.description || "").trim();
+      if (!l.id) l.id = uid("l");
+      if (w.length) {
+        l._warn = w;
+        if (warnings) w.forEach((m) => warnings.push({ sev: "warn", msg: m }));
+      }
+      return l;
+    }
+
+    /* Ensure a node exists for a link endpoint reference; auto-create unknown. */
+    function resolveNode(ref) {
+      const p = AppState.project;
+      if (!ref) return null;
+      let node = p.nodes.find((n) => n.id === ref || n.name === ref);
+      if (node) return node.id;
+      const nn = normNode({ name: ref, type: "unknown" });
+      nn.id = p.nodes.find((n) => n.id === nn.id) ? uid("n") : nn.id;
+      p.nodes.push(nn);
+      return nn.id;
+    }
+    function autoCreateEndpoints() {
+      const p = AppState.project;
+      p.links.forEach((l) => {
+        l._s = resolveNode(l.source);
+        l._t = resolveNode(l.target);
+      });
+    }
+
+    /* ---------- VLAN parsing ---------- */
+    function parseVlans(str) {
+      if (!str) return [];
+      const out = new Set();
+      String(str)
+        .split(",")
+        .forEach((part) => {
+          part = part.trim();
+          if (!part) return;
+          const m = part.match(/^(\d+)\s*-\s*(\d+)$/);
+          if (m) {
+            let a = +m[1],
+              b = +m[2];
+            if (a > b) [a, b] = [b, a];
+            for (let i = a; i <= b && i - a < 4096; i++) out.add(i);
+          } else if (/^\d+$/.test(part)) out.add(+part);
+        });
+      return [...out];
+    }
+    function vlanColor(str) {
+      const vs = parseVlans(str);
+      const v = vs.length ? vs[0] : 0;
+      const hue = (v * 47) % 360;
+      return `hsl(${hue},62%,58%)`;
+    }
+
+    /* ---------- Icon resolution ---------- */
+    function nodeIcon(node) {
+      const s = AppState.project.settings;
+      if (node.icon && node.icon.indexOf("custom:") === 0) {
+        const id = node.icon.slice(7);
+        return (s.custom_icons && s.custom_icons[id]) || ICONS.unknown;
+      }
+      if (node.icon && ICONS[node.icon]) return ICONS[node.icon];
+      const mapped = s.icon_map && s.icon_map[node.type];
+      if (mapped) {
+        if (mapped.indexOf("custom:") === 0) {
+          const id = mapped.slice(7);
+          return (s.custom_icons && s.custom_icons[id]) || ICONS.unknown;
+        }
+        if (ICONS[mapped]) return ICONS[mapped];
+      }
+      return ICONS[node.type] || ICONS.unknown;
+    }
+
+    /* ---------- Edge visual computation ---------- */
+    function computeEdgeVisuals(l) {
+      let color,
+        style,
+        dash = null;
+      const ms = MEDIA_STYLE[l.media] || MEDIA_STYLE.copper;
+      style = ms.style;
+      color = ms.color;
+      if (l.media === "virtual" || TUNNEL_TYPES.includes(l.link_type)) {
+        style = "dotted";
+        color = TUNNEL_COLOR[l.link_type] || color || "#78909c";
+      }
+      if (style === "dashdot") {
+        style = "dashed";
+        dash = [6, 3, 2, 3];
+      }
+      let width = SPEED_WIDTH[l.speed] || 2;
+      if (l.link_type === "lag") width = Math.max(width, 3.5);
+      let opacity = 1;
+      if (l.status === "planned") opacity = 0.4;
+      // stp blocked → desaturate
+      let desat = false;
+      if (l.stp_state === "blocked") {
+        desat = true;
+      }
+      if (l.status === "down") {
+        color = "#ef5350";
+      }
+      if (AppState.ui.vlanColoring && l.vlan) {
+        color = vlanColor(l.vlan);
+      }
+      if (desat) color = desaturate(color);
+      const badges = [];
+      if (l.link_type === "lag") badges.push("⇉");
+      if (l.stp_state === "blocked") badges.push("⛔");
+      if (l.status === "down") badges.push("✕");
+      return { color, style, dash, width, opacity, midLabel: badges.join(" ") };
+    }
+    function desaturate(hex) {
+      if (!hex || hex[0] !== "#") return "#7a828e";
+      const n = parseInt(hex.slice(1), 16);
+      let r = (n >> 16) & 255,
+        g = (n >> 8) & 255,
+        b = n & 255;
+      const avg = (r + g + b) / 3;
+      r = Math.round(r * 0.35 + avg * 0.65);
+      g = Math.round(g * 0.35 + avg * 0.65);
+      b = Math.round(b * 0.35 + avg * 0.65);
+      return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+    }
+
+    /* ============================================================================
+   Cytoscape init + styling
+   ========================================================================== */
+    function themeColors() {
+      const light = AppState.ui.theme === "light";
+      return {
+        text: light ? "#1a2230" : "#e6e9ef",
+        text2: light ? "#5a6472" : "#9aa4b2",
+        nodeBg: light ? "#ffffff" : "#1c2230",
+        nodeBorder: light ? "#c2cad6" : "#39445a",
+        parentBg: light ? "rgba(43,125,224,.06)" : "rgba(77,159,255,.07)",
+        parentBorder: light ? "#b7c2d4" : "#3a4456",
+        edgeLabelBg: light ? "#ffffff" : "#161b22",
+      };
+    }
+    function buildStylesheet() {
+      const t = themeColors();
+      return [
+        {
+          selector: "node",
+          style: {
+            "background-image": (ele) => nodeIcon(ele.data("node")),
+            "background-fit": "contain",
+            "background-clip": "none",
+            "background-opacity": 0,
+            "background-color": t.nodeBg,
+            width: 46,
+            height: 46,
+            shape: "round-rectangle",
+            label: "data(name)",
+            "font-size": 9.5,
+            color: t.text,
+            "text-valign": "bottom",
+            "text-halign": "center",
+            "text-margin-y": 5,
+            "text-wrap": "wrap",
+            "text-max-width": 92,
+            "text-outline-width": 0,
+            "border-width": 0,
+            "min-zoomed-font-size": 6,
+          },
+        },
+        {
+          selector: "node:selected",
+          style: {
+            "border-width": 3,
+            "border-color": "#4d9fff",
+            "background-color": "rgba(77,159,255,.10)",
+            "background-opacity": 1,
+          },
+        },
+        {
+          selector: "node.search-hit",
+          style: {
+            "border-width": 3,
+            "border-color": "#ffca28",
+            "background-color": "rgba(255,202,40,.12)",
+            "background-opacity": 1,
+          },
+        },
+        {
+          selector: ":parent",
+          style: {
+            "background-opacity": 1,
+            "background-color": t.parentBg,
+            "border-width": 1.5,
+            "border-color": t.nodeBorder,
+            "border-style": "dashed",
+            label: "data(label)",
+            "font-size": 12,
+            "font-weight": "bold",
+            color: t.text2,
+            "text-valign": "top",
+            "text-halign": "center",
+            "text-margin-y": -4,
+            padding: "22px",
+            shape: "round-rectangle",
+            "background-image": "none",
+          },
+        },
+        {
+          selector: "edge",
+          style: {
+            "curve-style": "bezier",
+            "line-color": (ele) => ele.data("_color"),
+            width: (ele) => ele.data("_width"),
+            "line-style": (ele) => ele.data("_style"),
+            "line-dash-pattern": (ele) => ele.data("_dash") || [6, 3],
+            opacity: (ele) => ele.data("_opacity"),
+            "target-arrow-shape": "none",
+            "source-arrow-shape": "none",
+            label: (ele) => ele.data("_midLabel"),
+            "font-size": 13,
+            color: (ele) => ele.data("_color"),
+            "text-background-color": t.edgeLabelBg,
+            "text-background-opacity": 0.9,
+            "text-background-padding": 2,
+            "text-background-shape": "round-rectangle",
+            "min-zoomed-font-size": 5,
+          },
+        },
+        {
+          selector: "edge:selected",
+          style: {
+            width: (ele) => (ele.data("_width") || 2) + 2,
+            "line-color": "#4d9fff",
+            opacity: 1,
+            "z-index": 99,
+          },
+        },
+        {
+          selector: "edge.search-hit",
+          style: { "line-color": "#ffca28", opacity: 1, "z-index": 90 },
+        },
+        { selector: ".dimmed", style: { opacity: 0.12 } },
+        { selector: ".hidden", style: { display: "none" } },
+      ];
+    }
+
+    function initCy() {
+      // register plugins
+      try {
+        if (window.cytoscapeFcose) cytoscape.use(window.cytoscapeFcose);
+      } catch (e) {
+        console.warn("fcose reg", e);
+      }
+      try {
+        if (window.cytoscapeExpandCollapse)
+          cytoscape.use(window.cytoscapeExpandCollapse);
+      } catch (e) {
+        console.warn("ec reg", e);
+      }
+      AppState.cy = cytoscape({
+        container: $("#cy"),
+        style: buildStylesheet(),
+        boxSelectionEnabled: true,
+        selectionType: "additive",
+        minZoom: 0.1,
+        maxZoom: 4,
+      });
+      wireCyEvents();
+    }
+
+    /* ---------- Build cy elements from project ---------- */
+    function buildElements() {
+      const p = AppState.project;
+      autoCreateEndpoints();
+      const els = [];
+      // groups (compound parents) only if grouped
+      const siteParents = {};
+      if (AppState.ui.grouped) {
+        const sites = [...new Set(p.nodes.map((n) => n.site).filter(Boolean))];
+        sites.forEach((site) => {
+          const pid = "site::" + site;
+          siteParents[site] = pid;
+          els.push({
+            group: "nodes",
+            data: { id: pid, label: site, _isSite: true },
+            classes: "site-parent",
+          });
+        });
+      }
+      p.nodes.forEach((n) => {
+        const d = { id: n.id, name: n.name, node: n };
+        if (AppState.ui.grouped && n.site && siteParents[n.site])
+          d.parent = siteParents[n.site];
+        const el = { group: "nodes", data: d };
+        if (n.x != null && n.y != null) el.position = { x: n.x, y: n.y };
+        els.push(el);
+      });
+      p.links.forEach((l) => {
+        const v = computeEdgeVisuals(l);
+        els.push({
+          group: "edges",
+          data: {
+            id: l.id,
+            source: l._s,
+            target: l._t,
+            link: l,
+            _color: v.color,
+            _width: v.width,
+            _style: v.style,
+            _dash: v.dash,
+            _opacity: v.opacity,
+            _midLabel: v.midLabel,
+          },
+        });
+      });
+      return els;
+    }
+
+    let _needsLayout = false;
+    function fullRender(opts) {
+      opts = opts || {};
+      const cy = AppState.cy;
+      cy.startBatch();
+      cy.elements().remove();
+      cy.add(buildElements());
+      cy.style(buildStylesheet());
+      cy.endBatch();
+      // expand-collapse setup for grouped mode
+      setupExpandCollapse();
+      if (opts.layout || _needsLayout) {
+        runLayout(AppState.ui.layout, true);
+        _needsLayout = false;
+      }
+      applyVisibility();
+      refreshSelection();
+      renderLegend();
+      updateStatus();
+      validate();
+      updateUndoButtons();
+      saveAutosave();
+    }
+
+    function refreshSelection() {
+      const cy = AppState.cy,
+        id = AppState.ui.selectedId;
+      cy.$(":selected").unselect();
+      if (id) {
+        const el = cy.getElementById(id);
+        if (el && el.length) el.select();
+      }
+    }
+
+    /* ============================================================================
+   Layouts
+   ========================================================================== */
+    function runLayout(name, fit) {
+      const cy = AppState.cy;
+      AppState.ui.layout = name;
+      AppState.project.settings.layout = name;
+      markMenuActive("#layoutMenu", "data-layout", name);
+      let opts;
+      if (name === "manual") {
+        if (fit) cy.fit(cy.elements(":visible"), 40);
+        return;
+      }
+      if (name === "fcose" && cy.layout) {
+        const hasFcose = !!window.cytoscapeFcose;
+        opts = hasFcose
+          ? {
+              name: "fcose",
+              quality: "proof",
+              animate: false,
+              randomize: true,
+              nodeRepulsion: 9000,
+              idealEdgeLength: 110,
+              nodeSeparation: 90,
+              padding: 40,
+            }
+          : { name: "cose", animate: false, padding: 40 };
+      } else if (name === "hierarchy") {
+        opts = {
+          name: "breadthfirst",
+          directed: true,
+          padding: 40,
+          spacingFactor: 1.1,
+          animate: false,
+          roots: cy.nodes().filter((n) => {
+            const nd = n.data("node");
+            return nd && (nd.layer === "wan" || nd.layer === "edge");
+          }),
+          depthSort: (a, b) =>
+            layerRank(a.data("node")) - layerRank(b.data("node")),
+        };
+      } else if (name === "circle-site") {
+        layoutCircularPerSite(fit);
+        return;
+      } else if (name === "grid") {
+        opts = {
+          name: "grid",
+          padding: 40,
+          animate: false,
+          avoidOverlap: true,
+        };
+      } else {
+        opts = { name: "cose", animate: false, padding: 40 };
+      }
+      try {
+        const lay = cy.layout(opts);
+        lay.one("layoutstop", () => {
+          persistPositions();
+          if (fit) cy.fit(cy.elements(":visible"), 40);
+        });
+        lay.run();
+      } catch (e) {
+        console.warn("layout error", e);
+        toast("Layout '" + name + "' failed, using grid", true);
+        cy.layout({ name: "grid", animate: false }).run();
+      }
+    }
+    function layerRank(n) {
+      const order = {
+        wan: 0,
+        edge: 1,
+        dmz: 1,
+        core: 2,
+        distribution: 3,
+        access: 4,
+        "": 5,
+      };
+      return order[n ? n.layer : ""] != null ? order[n.layer] : 5;
+    }
+    function layoutCircularPerSite(fit) {
+      const cy = AppState.cy;
+      const sites = {};
+      cy.nodes().forEach((n) => {
+        const nd = n.data("node");
+        if (!nd) return;
+        const s = nd.site || "(none)";
+        (sites[s] = sites[s] || []).push(n);
+      });
+      const keys = Object.keys(sites);
+      const cols = Math.ceil(Math.sqrt(keys.length));
+      const gap = 420;
+      keys.forEach((s, i) => {
+        const cx = (i % cols) * gap,
+          cy0 = Math.floor(i / cols) * gap;
+        const arr = sites[s];
+        const R = Math.max(60, arr.length * 16);
+        arr.forEach((n, j) => {
+          const ang = (2 * Math.PI * j) / arr.length;
+          n.position({ x: cx + R * Math.cos(ang), y: cy0 + R * Math.sin(ang) });
+        });
+      });
+      persistPositions();
+      if (fit) cy.fit(cy.elements(":visible"), 40);
+    }
+    function persistPositions() {
+      const cy = AppState.cy,
+        map = {};
+      AppState.project.nodes.forEach((n) => (map[n.id] = n));
+      cy.nodes().forEach((n) => {
+        if (n.isParent()) return;
+        const nd = map[n.id()];
+        if (nd) {
+          const p = n.position();
+          nd.x = Math.round(p.x);
+          nd.y = Math.round(p.y);
+        }
+      });
+    }
+
+    /* ---------- expand/collapse ---------- */
+    let _ecApi = null;
+    function setupExpandCollapse() {
+      const cy = AppState.cy;
+      if (!AppState.ui.grouped || !cy.expandCollapse) {
+        _ecApi = null;
+        return;
+      }
+      try {
+        _ecApi = cy.expandCollapse({
+          layoutBy: null,
+          fisheye: false,
+          animate: false,
+          undoable: false,
+          cueEnabled: true,
+          expandCollapseCueSize: 14,
+          expandCollapseCueLineSize: 8,
+        });
+      } catch (e) {
+        _ecApi = null;
+      }
+    }
+
+    /* ============================================================================
+   Visibility: filters, overlay, search
+   ========================================================================== */
+    function activeFilterCount() {
+      const f = AppState.ui.filters;
+      let c = 0;
+      Object.keys(f).forEach((k) => {
+        if (f[k] && f[k].length) c++;
+      });
+      return c;
+    }
+    function edgeVisibleByOverlay(l) {
+      const o = AppState.ui.overlay;
+      const isTunnel = TUNNEL_TYPES.includes(l.link_type);
+      if (o === "physical") return !isTunnel;
+      if (o === "tunnels") return isTunnel;
+      return true;
+    }
+    function nodePassesFilters(n) {
+      const f = AppState.ui.filters;
+      if (f.site.length && !f.site.includes(n.site)) return false;
+      if (f.layer.length && !f.layer.includes(n.layer)) return false;
+      return true;
+    }
+    function linkPassesFilters(l) {
+      const f = AppState.ui.filters;
+      if (f.link_type.length && !f.link_type.includes(l.link_type))
+        return false;
+      if (f.media.length && !f.media.includes(l.media)) return false;
+      if (f.status.length && !f.status.includes(l.status)) return false;
+      if (f.vlan.length) {
+        const vs = parseVlans(l.vlan);
+        if (!f.vlan.some((fv) => vs.includes(+fv))) return false;
+      }
+      return true;
+    }
+    function searchMatch(node, link, q) {
+      if (!q) return false;
+      q = q.toLowerCase();
+      if (node) {
+        const n = node;
+        return [n.name, n.mgmt_ip, n.site, n.vendor, n.model].some((x) =>
+          String(x || "")
+            .toLowerCase()
+            .includes(q),
+        );
+      }
+      if (link) {
+        const l = link;
+        return [l.vlan, l.subnet, l.circuit_id, l.description, l.provider].some(
+          (x) =>
+            String(x || "")
+              .toLowerCase()
+              .includes(q),
+        );
+      }
+      return false;
+    }
+    function applyVisibility() {
+      const cy = AppState.cy;
+      const q = AppState.ui.search.trim();
+      cy.startBatch();
+      cy.elements().removeClass("hidden dimmed search-hit");
+      const anySearch = !!q;
+      let searchHits = cy.collection();
+      // nodes
+      cy.nodes().forEach((n) => {
+        if (n.isParent()) return;
+        const nd = n.data("node");
+        if (!nd) return;
+        let vis = nodePassesFilters(nd);
+        if (!vis) n.addClass("hidden");
+        if (anySearch && vis && searchMatch(nd, null, q)) {
+          n.addClass("search-hit");
+          searchHits = searchHits.union(n);
+        }
+      });
+      // edges
+      cy.edges().forEach((e) => {
+        const l = e.data("link");
+        if (!l) return;
+        let vis = true;
+        if (l.status === "decommissioned" && !AppState.ui.showDecom)
+          vis = false;
+        if (vis && !edgeVisibleByOverlay(l)) vis = false;
+        if (vis && !linkPassesFilters(l)) vis = false;
+        // endpoints hidden?
+        if (vis) {
+          const s = cy.getElementById(l._s),
+            t = cy.getElementById(l._t);
+          if (s.hasClass("hidden") || t.hasClass("hidden")) vis = false;
+        }
+        if (!vis) e.addClass("hidden");
+        if (anySearch && vis && searchMatch(null, l, q)) {
+          e.addClass("search-hit");
+          searchHits = searchHits.union(e);
+          searchHits = searchHits.union(e.connectedNodes());
+        }
+      });
+      // hide parents with no visible children
+      cy.nodes(":parent").forEach((p) => {
+        if (p.children(":visible").length === 0) p.addClass("hidden");
+        else p.removeClass("hidden");
+      });
+      // dim non-hits during search
+      if (anySearch && searchHits.length) {
+        cy.elements(":visible").not(searchHits).addClass("dimmed");
+      }
+      cy.endBatch();
+      if (anySearch && searchHits.length) {
+        cy.animate(
+          { fit: { eles: searchHits.filter(":visible"), padding: 80 } },
+          { duration: 280 },
+        );
+      }
+      updateStatus();
+    }
+
+    /* ============================================================================
+   Tooltips + hover
+   ========================================================================== */
+    function wireCyEvents() {
+      const cy = AppState.cy,
+        tip = $("#tooltip");
+      cy.on("mouseover", "node", (evt) => {
+        const nd = evt.target.data("node");
+        if (!nd) return;
+        tip.innerHTML =
+          `<div class="tt-title">${esc(nd.name)}</div>` +
+          ttRow("Type", nd.type) +
+          ttRow("Mgmt IP", nd.mgmt_ip) +
+          ttRow("Site", nd.site) +
+          ttRow("Layer", nd.layer) +
+          ttRow("Vendor", [nd.vendor, nd.model].filter(Boolean).join(" "));
+        tip.style.display = "block";
+      });
+      cy.on("mouseover", "edge", (evt) => {
+        const l = evt.target.data("link");
+        if (!l) return;
+        const s = nodeName(l._s),
+          t = nodeName(l._t);
+        tip.innerHTML =
+          `<div class="tt-title">${esc(s)} ↔ ${esc(t)}</div>` +
+          ttRow(
+            "Interfaces",
+            [l.source_if, l.target_if].filter(Boolean).join(" ↔ "),
+          ) +
+          ttRow(
+            "Speed / Media",
+            [l.speed, l.media].filter(Boolean).join(" · "),
+          ) +
+          ttRow("Type", l.link_type) +
+          ttRow("VLAN", l.vlan) +
+          ttRow("Subnet", l.subnet) +
+          ttRow("STP", l.stp_state !== "n/a" ? l.stp_state : "") +
+          ttRow("Status", l.status) +
+          ttRow("Circuit", l.circuit_id);
+        tip.style.display = "block";
+      });
+      cy.on("mouseout", "node,edge", () => {
+        tip.style.display = "none";
+      });
+      document.addEventListener("mousemove", (e) => {
+        if (tip.style.display === "block") {
+          let x = e.clientX + 14,
+            y = e.clientY + 14;
+          const r = tip.getBoundingClientRect();
+          if (x + r.width > window.innerWidth) x = e.clientX - r.width - 14;
+          if (y + r.height > window.innerHeight) y = e.clientY - r.height - 14;
+          tip.style.left = x + "px";
+          tip.style.top = y + "px";
+        }
+      });
+      cy.on("tap", "node", (evt) => {
+        if (evt.target.isParent()) {
+          onSelectGroup(evt.target.id());
+          return;
+        }
+        if (AppState.ui.drawMode) {
+          handleDrawClick(evt.target);
+          return;
+        }
+        tip.style.display = "none";
+        openDetail("node", evt.target.data("node"));
+      });
+      cy.on("tap", "edge", (evt) => {
+        tip.style.display = "none";
+        openDetail("link", evt.target.data("link"));
+      });
+      cy.on("tap", (evt) => {
+        if (evt.target === cy) {
+          if (!AppState.ui.drawMode) {
+            closeDetail();
+            cy.$(":selected").unselect();
+            AppState.ui.selectedId = null;
+          }
+          hideContext();
+          hideBulk();
+        }
+      });
+      cy.on("cxttap", "node,edge", (evt) => {
+        evt.originalEvent.preventDefault();
+        showContext(evt);
+      });
+      cy.on("cxttap", (evt) => {
+        if (evt.target === cy) {
+          evt.originalEvent && evt.originalEvent.preventDefault();
+          showContextEmpty(evt);
+        }
+      });
+      cy.on("dragfreeon", "node", () => {
+        persistPositions();
+        pushSnapshotDebounced();
+        saveAutosave();
+      });
+      cy.on("select unselect", "node", () => {
+        updateBulkBar();
+      });
+      cy.on("zoom pan", () => {
+        updateStatus();
+      });
+    }
+    function ttRow(label, val) {
+      if (val == null || val === "") return "";
+      return `<div class="tt-row"><b>${esc(label)}:</b> ${esc(val)}</div>`;
+    }
+    function nodeName(id) {
+      const n = AppState.project.nodes.find((x) => x.id === id);
+      return n ? n.name : id;
+    }
+
+    /* ============================================================================
+   Detail panel (view + edit)
+   ========================================================================== */
+    function fieldInput(label, key, val, opts) {
+      opts = opts || {};
+      const id = "f_" + key;
+      if (opts.type === "select") {
+        return (
+          `<div class="field"><label>${esc(label)}</label><select id="${id}" data-key="${key}">` +
+          (opts.allowEmpty
+            ? `<option value=""${!val ? " selected" : ""}>—</option>`
+            : "") +
+          opts.options
+            .map(
+              (o) =>
+                `<option value="${esc(o)}"${o === val ? " selected" : ""}>${esc(o)}</option>`,
+            )
+            .join("") +
+          `</select></div>`
+        );
+      }
+      if (opts.type === "textarea")
+        return `<div class="field"><label>${esc(label)}</label><textarea id="${id}" data-key="${key}">${esc(val)}</textarea></div>`;
+      return `<div class="field"><label>${esc(label)}</label><input id="${id}" data-key="${key}" value="${esc(val)}" ${opts.attr || ""}/></div>`;
+    }
+    function openDetail(kind, obj) {
+      if (!obj) return;
+      AppState.ui.selectedId = obj.id;
+      refreshSelection();
+      const p = $("#panel");
+      if (kind === "node") {
+        p.innerHTML = `
+    <div class="panel-head"><h3><span class="ptype">NODE</span> ${esc(obj.name)}</h3><button class="close-x" id="pClose">×</button></div>
+    <div class="panel-body">
+      ${fieldInput("Name", "name", obj.name)}
+      ${fieldInput("Type", "type", obj.type, { type: "select", options: NODE_TYPES })}
+      <div class="field two"><div>${fieldInput("Site", "site", obj.site)}</div><div>${fieldInput("Layer", "layer", obj.layer, { type: "select", options: LAYERS, allowEmpty: true })}</div></div>
+      ${fieldInput("Mgmt IP", "mgmt_ip", obj.mgmt_ip)}
+      <div class="field two"><div>${fieldInput("Vendor", "vendor", obj.vendor)}</div><div>${fieldInput("Model", "model", obj.model)}</div></div>
+      ${fieldInput("Notes", "notes", obj.notes, { type: "textarea" })}
+      <div class="field"><label>Icon</label>
+        <select id="f_icon" data-key="icon"><option value="">(auto by type)</option>${NODE_TYPES.map((t) => `<option value="${t}"${obj.icon === t ? " selected" : ""}>${t}</option>`).join("")}${customIconOptions(obj.icon)}</select>
+        <button class="btn" id="pUploadIcon" style="margin-top:6px">Upload custom icon…</button>
+      </div>
+    </div>
+    <div class="panel-foot"><button class="btn primary" id="pSave" style="flex:1">Save</button><button class="btn" id="pCancel">Cancel</button><button class="btn danger" id="pDelete">Delete</button></div>`;
+        p.classList.add("open");
+        $("#pClose").onclick = $("#pCancel").onclick = closeDetail;
+        $("#pSave").onclick = () => saveNodeEdit(obj.id);
+        $("#pDelete").onclick = () => {
+          deleteNode(obj.id);
+          closeDetail();
+        };
+        $("#pUploadIcon").onclick = () => {
+          AppState._iconTargetNode = obj.id;
+          $("#fileIcon").click();
+        };
+      } else {
+        const l = obj;
+        p.innerHTML = `
+    <div class="panel-head"><h3><span class="ptype">LINK</span> ${esc(nodeName(l._s))} ↔ ${esc(nodeName(l._t))}</h3><button class="close-x" id="pClose">×</button></div>
+    <div class="panel-body">
+      <div class="field two"><div>${fieldInput("Source", "source", nodeName(l._s), { attr: "readonly" })}</div><div>${fieldInput("Target", "target", nodeName(l._t), { attr: "readonly" })}</div></div>
+      <div class="field two"><div>${fieldInput("Source If", "source_if", l.source_if)}</div><div>${fieldInput("Target If", "target_if", l.target_if)}</div></div>
+      <div class="field two"><div>${fieldInput("Speed", "speed", l.speed, { type: "select", options: SPEEDS, allowEmpty: true })}</div><div>${fieldInput("Media", "media", l.media, { type: "select", options: MEDIA })}</div></div>
+      <div class="field two"><div>${fieldInput("Link Type", "link_type", l.link_type, { type: "select", options: LINK_TYPES })}</div><div>${fieldInput("STP", "stp_state", l.stp_state, { type: "select", options: STP_STATES })}</div></div>
+      <div class="field two"><div>${fieldInput("VLAN", "vlan", l.vlan)}</div><div>${fieldInput("Status", "status", l.status, { type: "select", options: STATUSES })}</div></div>
+      ${fieldInput("Subnet", "subnet", l.subnet)}
+      <div class="field two"><div>${fieldInput("Provider", "provider", l.provider)}</div><div>${fieldInput("Circuit ID", "circuit_id", l.circuit_id)}</div></div>
+      ${fieldInput("Bandwidth Committed", "bandwidth_committed", l.bandwidth_committed)}
+      ${fieldInput("Description", "description", l.description, { type: "textarea" })}
+    </div>
+    <div class="panel-foot"><button class="btn primary" id="pSave" style="flex:1">Save</button><button class="btn" id="pCancel">Cancel</button><button class="btn danger" id="pDelete">Delete</button></div>`;
+        p.classList.add("open");
+        $("#pClose").onclick = $("#pCancel").onclick = closeDetail;
+        $("#pSave").onclick = () => saveLinkEdit(l.id);
+        $("#pDelete").onclick = () => {
+          deleteLink(l.id);
+          closeDetail();
+        };
+      }
+    }
+    function customIconOptions(cur) {
+      const ci = AppState.project.settings.custom_icons || {};
+      return Object.keys(ci)
+        .map(
+          (id) =>
+            `<option value="custom:${id}"${cur === "custom:" + id ? " selected" : ""}>custom: ${esc(id)}</option>`,
+        )
+        .join("");
+    }
+    function closeDetail() {
+      $("#panel").classList.remove("open");
+    }
+    function readPanelValues() {
+      const o = {};
+      $$("#panel [data-key]").forEach((el) => {
+        o[el.dataset.key] = el.value;
+      });
+      return o;
+    }
+    function saveNodeEdit(id) {
+      const vals = readPanelValues();
+      const node = AppState.project.nodes.find((n) => n.id === id);
+      if (!node) return;
+      pushSnapshot();
+      Object.assign(node, {
+        name: vals.name.trim() || node.name,
+        type: vals.type,
+        site: vals.site.trim(),
+        layer: vals.layer,
+        mgmt_ip: vals.mgmt_ip.trim(),
+        vendor: vals.vendor.trim(),
+        model: vals.model.trim(),
+        notes: vals.notes,
+        icon: vals.icon,
+      });
+      fullRender();
+      closeDetail();
+      toast("Node saved");
+    }
+    function saveLinkEdit(id) {
+      const vals = readPanelValues();
+      const l = AppState.project.links.find((x) => x.id === id);
+      if (!l) return;
+      pushSnapshot();
+      Object.assign(l, {
+        source_if: vals.source_if.trim(),
+        target_if: vals.target_if.trim(),
+        speed: vals.speed,
+        media: vals.media,
+        link_type: vals.link_type,
+        stp_state: vals.stp_state,
+        vlan: vals.vlan.trim(),
+        status: vals.status,
+        subnet: vals.subnet.trim(),
+        provider: vals.provider.trim(),
+        circuit_id: vals.circuit_id.trim(),
+        bandwidth_committed: vals.bandwidth_committed.trim(),
+        description: vals.description,
+      });
+      fullRender();
+      // reopen to reflect changes / tooltip
+      openDetail("link", l);
+      toast("Link saved");
+    }
+
+    /* ============================================================================
+   Add / delete / draw
+   ========================================================================== */
+    function addNode(pos) {
+      pushSnapshot();
+      const n = normNode({ name: "new-node", type: "unknown" });
+      n.id = uid("n");
+      const cy = AppState.cy;
+      const p = pos || cy.extent();
+      n.x = pos ? pos.x : Math.round((cy.extent().x1 + cy.extent().x2) / 2);
+      n.y = pos ? pos.y : Math.round((cy.extent().y1 + cy.extent().y2) / 2);
+      AppState.project.nodes.push(n);
+      fullRender();
+      openDetail("node", n);
+      toast("Node added");
+    }
+    function deleteNode(id) {
+      pushSnapshot();
+      const p = AppState.project;
+      const gone = p.nodes.find((n) => n.id === id);
+      p.nodes = p.nodes.filter((n) => n.id !== id);
+      // drop links connected to this node (by resolved endpoint id, or by raw name/id reference)
+      p.links = p.links.filter((l) => {
+        if (l._s === id || l._t === id || l.source === id || l.target === id)
+          return false;
+        if (gone && (l.source === gone.name || l.target === gone.name))
+          return false;
+        return true;
+      });
+      if (AppState.ui.selectedId === id) AppState.ui.selectedId = null;
+      fullRender();
+      toast("Node deleted");
+    }
+    function deleteLink(id) {
+      pushSnapshot();
+      AppState.project.links = AppState.project.links.filter(
+        (l) => l.id !== id,
+      );
+      if (AppState.ui.selectedId === id) AppState.ui.selectedId = null;
+      fullRender();
+      toast("Link deleted");
+    }
+    function toggleDrawMode(on) {
+      AppState.ui.drawMode = on != null ? on : !AppState.ui.drawMode;
+      AppState.ui.drawSource = null;
+      $("#btnDrawLink").classList.toggle("active", AppState.ui.drawMode);
+      $("#drawHint").style.display = AppState.ui.drawMode ? "block" : "none";
+      AppState.cy.$("node").unselect();
+    }
+    function handleDrawClick(node) {
+      if (node.isParent()) return;
+      if (!AppState.ui.drawSource) {
+        AppState.ui.drawSource = node.id();
+        node.select();
+        $("#drawHint").textContent =
+          "Source: " +
+          node.data("name") +
+          " — now click the target node (Esc to cancel).";
+        return;
+      }
+      if (node.id() === AppState.ui.drawSource) {
+        toast("Pick a different target", true);
+        return;
+      }
+      pushSnapshot();
+      const l = normLink({
+        source: AppState.ui.drawSource,
+        target: node.id(),
+        media: "copper",
+        link_type: "physical",
+        status: "up",
+      });
+      AppState.project.links.push(l);
+      toggleDrawMode(false);
+      fullRender();
+      const nl = AppState.project.links.find((x) => x.id === l.id);
+      openDetail("link", nl);
+      toast("Link created");
+    }
+
+    /* ============================================================================
+   Context menu + bulk
+   ========================================================================== */
+    function showContext(evt) {
+      const el = evt.target;
+      const isNode = el.isNode();
+      const cm = $("#contextMenu");
+      const id = el.id();
+      let items = [];
+      if (isNode && !el.isParent()) {
+        items = [
+          ["Edit…", () => openDetail("node", el.data("node"))],
+          [
+            "Draw link from here",
+            () => {
+              toggleDrawMode(true);
+              handleDrawClick(el);
+            },
+          ],
+          ["Delete node", () => deleteNode(id)],
+        ];
+      } else if (el.isEdge()) {
+        items = [
+          ["Edit…", () => openDetail("link", el.data("link"))],
+          ["Delete link", () => deleteLink(id)],
+        ];
+      } else return;
+      cm.innerHTML = items
+        .map((it, i) => `<div class="mi" data-i="${i}">${esc(it[0])}</div>`)
+        .join("");
+      cm.querySelectorAll(".mi").forEach(
+        (mi, i) =>
+          (mi.onclick = () => {
+            hideContext();
+            items[i][1]();
+          }),
+      );
+      positionContext(evt.originalEvent);
+    }
+    function showContextEmpty(evt) {
+      const cm = $("#contextMenu");
+      const pos = evt.position || AppState.cy.pan();
+      const items = [
+        ["Add node here", () => addNode(pos)],
+        [
+          "Fit to screen",
+          () => AppState.cy.fit(AppState.cy.elements(":visible"), 40),
+        ],
+        ["Run fCoSE layout", () => runLayout("fcose", true)],
+      ];
+      cm.innerHTML = items
+        .map((it, i) => `<div class="mi" data-i="${i}">${esc(it[0])}</div>`)
+        .join("");
+      cm.querySelectorAll(".mi").forEach(
+        (mi, i) =>
+          (mi.onclick = () => {
+            hideContext();
+            items[i][1]();
+          }),
+      );
+      positionContext(evt.originalEvent);
+    }
+    function positionContext(oe) {
+      const cm = $("#contextMenu");
+      cm.style.display = "block";
+      let x = oe.clientX,
+        y = oe.clientY;
+      const r = cm.getBoundingClientRect();
+      if (x + r.width > innerWidth) x -= r.width;
+      if (y + r.height > innerHeight) y -= r.height;
+      cm.style.left = x + "px";
+      cm.style.top = y + "px";
+    }
+    function hideContext() {
+      $("#contextMenu").style.display = "none";
+    }
+    function updateBulkBar() {
+      const sel = AppState.cy.nodes(":selected").filter((n) => !n.isParent());
+      const bar = $("#bulkBar");
+      if (sel.length >= 2) {
+        bar.style.display = "flex";
+        $("#bulkCount").textContent = sel.length + " nodes selected";
+      } else hideBulk();
+    }
+    function hideBulk() {
+      $("#bulkBar").style.display = "none";
+    }
+    function applyBulk() {
+      const field = $("#bulkField").value,
+        val = $("#bulkValue").value;
+      if (!field) {
+        toast("Choose a field", true);
+        return;
+      }
+      const ids = AppState.cy
+        .nodes(":selected")
+        .filter((n) => !n.isParent())
+        .map((n) => n.id());
+      if (!ids.length) return;
+      if (field === "type" && !NODE_TYPES.includes(val)) {
+        toast("Invalid type", true);
+        return;
+      }
+      if (field === "layer" && val && !LAYERS.includes(val)) {
+        toast("Invalid layer", true);
+        return;
+      }
+      pushSnapshot();
+      AppState.project.nodes.forEach((n) => {
+        if (ids.includes(n.id)) n[field] = val;
+      });
+      fullRender();
+      toast("Updated " + ids.length + " nodes");
+    }
+    function bulkDelete() {
+      const ids = AppState.cy
+        .nodes(":selected")
+        .filter((n) => !n.isParent())
+        .map((n) => n.id());
+      if (!ids.length) return;
+      pushSnapshot();
+      const p = AppState.project;
+      p.nodes = p.nodes.filter((n) => !ids.includes(n.id));
+      p.links = p.links.filter(
+        (l) => !ids.includes(l._s) && !ids.includes(l._t),
+      );
+      hideBulk();
+      fullRender();
+      toast("Deleted " + ids.length + " nodes");
+    }
+
+    /* ============================================================================
+   Undo / redo
+   ========================================================================== */
+    function pushSnapshot() {
+      AppState.undo.push(clone(AppState.project));
+      if (AppState.undo.length > 50) AppState.undo.shift();
+      AppState.redo.length = 0;
+      updateUndoButtons();
+    }
+    let _snapT = null;
+    function pushSnapshotDebounced() {
+      clearTimeout(_snapT);
+      _snapT = setTimeout(() => {
+        AppState.undo.push(clone(AppState.project));
+        if (AppState.undo.length > 50) AppState.undo.shift();
+        AppState.redo.length = 0;
+        updateUndoButtons();
+      }, 350);
+    }
+    function undo() {
+      if (!AppState.undo.length) {
+        toast("Nothing to undo");
+        return;
+      }
+      AppState.redo.push(clone(AppState.project));
+      AppState.project = AppState.undo.pop();
+      fullRender();
+      toast("Undo");
+    }
+    function redo() {
+      if (!AppState.redo.length) {
+        toast("Nothing to redo");
+        return;
+      }
+      AppState.undo.push(clone(AppState.project));
+      AppState.project = AppState.redo.pop();
+      fullRender();
+      toast("Redo");
+    }
+    function updateUndoButtons() {
+      $("#btnUndo").disabled = !AppState.undo.length;
+      $("#btnRedo").disabled = !AppState.redo.length;
+    }
+
+    /* ============================================================================
+   Import: CSV wizard + JSON/YAML
+   ========================================================================== */
+    let _csvPending = null; // {kind, headers, rows, mapping}
+    function importCsvFiles(files) {
+      const arr = Array.from(files);
+      // read all, parse
+      let done = 0;
+      const parsed = [];
+      arr.forEach((f, i) => {
+        Papa.parse(f, {
+          header: true,
+          skipEmptyLines: true,
+          complete: (res) => {
+            parsed[i] = {
+              name: f.name,
+              headers: res.meta.fields || [],
+              rows: res.data,
+            };
+            if (++done === arr.length) startWizard(parsed);
+          },
+          error: (err) => {
+            toast("CSV parse error: " + err, true);
+          },
+        });
+      });
+    }
+    function guessKind(p) {
+      const h = p.headers.map((x) => x.toLowerCase());
+      if (h.includes("source") && h.includes("target")) return "links";
+      if (h.includes("name") || h.includes("mgmt_ip") || h.includes("type"))
+        return "nodes";
+      return "nodes";
+    }
+    const NODE_FIELDS = [
+      "name",
+      "type",
+      "mgmt_ip",
+      "site",
+      "layer",
+      "vendor",
+      "model",
+      "icon",
+      "notes",
+      "x",
+      "y",
+      "id",
+    ];
+    const LINK_FIELDS = [
+      "source",
+      "target",
+      "source_if",
+      "target_if",
+      "speed",
+      "media",
+      "link_type",
+      "stp_state",
+      "vlan",
+      "subnet",
+      "status",
+      "bandwidth_committed",
+      "provider",
+      "circuit_id",
+      "description",
+      "id",
+    ];
+    function startWizard(parsedFiles) {
+      _csvPending = { files: parsedFiles };
+      const body = $("#importBody");
+      body.innerHTML =
+        parsedFiles
+          .map((p, idx) => {
+            const kind = guessKind(p);
+            p.kind = kind;
+            const fields = kind === "links" ? LINK_FIELDS : NODE_FIELDS;
+            return `<div class="csv-file" data-idx="${idx}" style="margin-bottom:16px;border:1px solid var(--border);border-radius:8px;padding:12px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <b>${esc(p.name)}</b> <span class="pill">${p.rows.length} rows</span>
+        <label style="margin-left:auto;color:var(--text2)">Import as
+          <select class="kindSel" data-idx="${idx}" style="margin-left:6px;padding:4px;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text)">
+            <option value="nodes"${kind === "nodes" ? " selected" : ""}>Nodes</option>
+            <option value="links"${kind === "links" ? " selected" : ""}>Links</option>
+          </select></label>
+      </div>
+      <div class="mapWrap" data-idx="${idx}">${renderMapping(p, fields)}</div>
+    </div>`;
+          })
+          .join("") +
+        `<div class="field" style="margin-top:8px"><label>Merge mode</label>
+    <select id="mergeMode"><option value="merge-add">Merge — add new, keep existing</option><option value="update">Update matching, add new</option><option value="replace">Replace entire project</option></select></div>`;
+      $$(".kindSel").forEach(
+        (sel) =>
+          (sel.onchange = () => {
+            const idx = +sel.dataset.idx;
+            _csvPending.files[idx].kind = sel.value;
+            const fields = sel.value === "links" ? LINK_FIELDS : NODE_FIELDS;
+            body.querySelector('.mapWrap[data-idx="' + idx + '"]').innerHTML =
+              renderMapping(_csvPending.files[idx], fields);
+          }),
+      );
+      $("#importFoot").innerHTML =
+        `<button class="btn" data-close="importOverlay">Cancel</button><button class="btn primary" id="doImport">Import & Validate</button>`;
+      $("#doImport").onclick = runImport;
+      $("#importFoot").querySelector("[data-close]").onclick = () =>
+        closeOverlay("importOverlay");
+      openOverlay("importOverlay");
+    }
+    function renderMapping(p, fields) {
+      return (
+        `<div class="hint">Map source columns → netviz fields. Auto-matched where names align.</div>` +
+        fields
+          .map((f) => {
+            const auto = p.headers.find(
+              (h) =>
+                h.toLowerCase() === f.toLowerCase() ||
+                h.toLowerCase().replace(/[\s_]/g, "") === f.replace(/_/g, ""),
+            );
+            return `<div class="map-row"><div class="col-name">${esc(f)}${["name", "source", "target"].includes(f) ? ' <span class="pill">req</span>' : ""}</div>
+        <select class="mapSel" data-field="${f}">
+          <option value="">— none —</option>
+          ${p.headers.map((h) => `<option value="${esc(h)}"${h === auto ? " selected" : ""}>${esc(h)}</option>`).join("")}
+        </select></div>`;
+          })
+          .join("")
+      );
+    }
+    function runImport() {
+      const warnings = [];
+      const mode = $("#mergeMode").value;
+      const newNodes = [],
+        newLinks = [];
+      $$(".csv-file").forEach((fileEl) => {
+        const idx = +fileEl.dataset.idx;
+        const p = _csvPending.files[idx];
+        const kind = p.kind;
+        const map = {};
+        fileEl.querySelectorAll(".mapSel").forEach((s) => {
+          if (s.value) map[s.dataset.field] = s.value;
+        });
+        p.rows.forEach((row) => {
+          const obj = {};
+          Object.keys(map).forEach((f) => (obj[f] = row[map[f]]));
+          if (kind === "nodes") {
+            if (!obj.name && !obj.id) return;
+            newNodes.push(normNode(obj, warnings));
+          } else {
+            if (!obj.source || !obj.target) return;
+            newLinks.push(normLink(obj, warnings));
+          }
+        });
+      });
+      pushSnapshot();
+      const p = AppState.project;
+      if (mode === "replace") {
+        p.nodes = [];
+        p.links = [];
+      }
+      // nodes merge
+      newNodes.forEach((nn) => {
+        const ex = p.nodes.find((x) => x.id === nn.id || x.name === nn.name);
+        if (!ex) p.nodes.push(nn);
+        else if (mode === "update") {
+          Object.keys(nn).forEach((k) => {
+            if (
+              (nn[k] !== "" && nn[k] != null && !(k === "x" || k === "y")) ||
+              ((k === "x" || k === "y") && nn[k] != null)
+            )
+              ex[k] = nn[k];
+          });
+        }
+      });
+      // links merge
+      newLinks.forEach((nl) => {
+        const sid = resolveNode(nl.source),
+          tid = resolveNode(nl.target);
+        const ex = p.links.find(
+          (x) =>
+            resolveNode(x.source) === sid &&
+            resolveNode(x.target) === tid &&
+            x.source_if === nl.source_if &&
+            x.target_if === nl.target_if &&
+            x.link_type === nl.link_type,
+        );
+        if (!ex) p.links.push(nl);
+        else if (mode === "update") {
+          Object.keys(nl).forEach((k) => {
+            if (nl[k] !== "" && nl[k] != null && k !== "id") ex[k] = nl[k];
+          });
+        }
+      });
+      p.meta.modified = new Date().toISOString();
+      closeOverlay("importOverlay");
+      _needsLayout = hasUnpositioned();
+      fullRender({ layout: _needsLayout });
+      const errs = AppState.issues.length;
+      toast(
+        `Imported ${newNodes.length} nodes, ${newLinks.length} links` +
+          (warnings.length ? ` · ${warnings.length} mapping warnings` : ""),
+      );
+      if (AppState.issues.length) flashIssues();
+    }
+    function hasUnpositioned() {
+      return AppState.project.nodes.some((n) => n.x == null || n.y == null);
+    }
+
+    function importProjectFile(file) {
+      const r = new FileReader();
+      r.onload = () => {
+        try {
+          let data;
+          const txt = r.result;
+          if (/\.ya?ml$/i.test(file.name)) {
+            data = jsyaml.load(txt);
+          } else {
+            data = JSON.parse(txt);
+          }
+          loadProject(data, true);
+          toast(
+            "Project opened: " + ((data.meta && data.meta.name) || file.name),
+          );
+        } catch (e) {
+          toast("Failed to open: " + e.message, true);
+        }
+      };
+      r.readAsText(file);
+    }
+    function loadProject(data, resetView) {
+      const p = emptyProject();
+      if (data.meta) Object.assign(p.meta, data.meta);
+      if (data.settings) Object.assign(p.settings, data.settings);
+      p.nodes = (data.nodes || []).map((n) => normNode(n));
+      p.links = (data.links || []).map((l) => normLink(l));
+      p.groups = data.groups || [];
+      AppState.project = p;
+      if (p.settings.custom_icons)
+        preloadIcons(Object.values(p.settings.custom_icons));
+      AppState.undo = [];
+      AppState.redo = [];
+      AppState.ui.theme = p.settings.theme || "dark";
+      applyTheme();
+      AppState.ui.layout = p.settings.layout || "fcose";
+      AppState.ui.selectedId = null;
+      _needsLayout = hasUnpositioned();
+      fullRender({ layout: _needsLayout && resetView });
+      if (resetView && !_needsLayout)
+        AppState.cy.fit(AppState.cy.elements(":visible"), 40);
+    }
+
+    /* ============================================================================
+   Validation
+   ========================================================================== */
+    function ipInSubnet() {
+      return true;
+    }
+    function validSubnet(s) {
+      if (!s) return true;
+      return /^\d{1,3}(\.\d{1,3}){3}\/\d{1,2}$/.test(s.trim());
+    }
+    function validate() {
+      const p = AppState.project;
+      const issues = [];
+      const linkIds = {};
+      const ifpairs = {};
+      p.nodes.forEach((n) => {
+        if (n._warn)
+          n._warn.forEach((m) =>
+            issues.push({ sev: "warn", msg: m, id: n.id }),
+          );
+      });
+      p.links.forEach((l) => {
+        if (l._warn)
+          l._warn.forEach((m) =>
+            issues.push({ sev: "warn", msg: m, id: l.id }),
+          );
+      });
+      p.links.forEach((l) => {
+        const sid = l._s || resolveNode(l.source),
+          tid = l._t || resolveNode(l.target);
+        if (linkIds[l.id])
+          issues.push({
+            sev: "error",
+            msg: `Duplicate link ID "${l.id}"`,
+            id: l.id,
+          });
+        linkIds[l.id] = 1;
+        if (sid === tid)
+          issues.push({
+            sev: "warn",
+            msg: `Self-loop on ${nodeName(sid)}`,
+            id: l.id,
+          });
+        const key = [sid, l.source_if, tid, l.target_if].join("|");
+        if (l.source_if || l.target_if) {
+          if (ifpairs[key])
+            issues.push({
+              sev: "warn",
+              msg: `Duplicate link on interface pair ${nodeName(sid)}:${l.source_if} ↔ ${nodeName(tid)}:${l.target_if}`,
+              id: l.id,
+            });
+          ifpairs[key] = 1;
+        }
+        if (!SPEEDS.includes(l.speed) && l.speed)
+          issues.push({
+            sev: "warn",
+            msg: `Link ${nodeName(sid)}→${nodeName(tid)}: nonstandard speed`,
+            id: l.id,
+          });
+        if (l.subnet && !validSubnet(l.subnet))
+          issues.push({
+            sev: "warn",
+            msg: `Malformed subnet "${l.subnet}" on ${nodeName(sid)}→${nodeName(tid)}`,
+            id: l.id,
+          });
+        if (l.vlan && !/^(\d+(-\d+)?)(\s*,\s*\d+(-\d+)?)*$/.test(l.vlan.trim()))
+          issues.push({
+            sev: "warn",
+            msg: `Malformed VLAN "${l.vlan}" on ${nodeName(sid)}→${nodeName(tid)}`,
+            id: l.id,
+          });
+        if (l.stp_state === "blocked" && l.subnet)
+          issues.push({
+            sev: "warn",
+            msg: `STP blocked on routed (subnet-bearing) link ${nodeName(sid)}→${nodeName(tid)}`,
+            id: l.id,
+          });
+      });
+      // VLAN mismatch between trunk ends: compare links sharing an endpoint pair? interpret as: for two physical links forming a defined pair with vlan sets differing — check trunk consistency where same pair defined twice
+      // tunnel endpoints share no physical path
+      const physAdj = buildPhysAdj(p);
+      p.links.forEach((l) => {
+        if (TUNNEL_TYPES.includes(l.link_type)) {
+          const sid = l._s || resolveNode(l.source),
+            tid = l._t || resolveNode(l.target);
+          if (sid !== tid && !pathExists(physAdj, sid, tid))
+            issues.push({
+              sev: "info",
+              msg: `Tunnel ${l.link_type} ${nodeName(sid)}→${nodeName(tid)} has no underlying physical path`,
+              id: l.id,
+            });
+        }
+      });
+      AppState.issues = issues;
+      const badge = $("#issueBadge");
+      const errct = issues.length;
+      badge.textContent = errct;
+      badge.classList.toggle("zero", errct === 0);
+      badge.style.background = issues.some((i) => i.sev === "error")
+        ? "var(--danger)"
+        : "var(--warn)";
+      return issues;
+    }
+    function buildPhysAdj(p) {
+      const adj = {};
+      p.nodes.forEach((n) => (adj[n.id] = new Set()));
+      p.links.forEach((l) => {
+        if (
+          !TUNNEL_TYPES.includes(l.link_type) &&
+          l.status !== "decommissioned" &&
+          l.status !== "planned"
+        ) {
+          const s = l._s || resolveNode(l.source),
+            t = l._t || resolveNode(l.target);
+          if (adj[s] && adj[t]) {
+            adj[s].add(t);
+            adj[t].add(s);
+          }
+        }
+      });
+      return adj;
+    }
+    function pathExists(adj, a, b) {
+      if (!adj[a] || !adj[b]) return false;
+      const seen = new Set([a]);
+      const q = [a];
+      while (q.length) {
+        const cur = q.shift();
+        if (cur === b) return true;
+        (adj[cur] || []).forEach((n) => {
+          if (!seen.has(n)) {
+            seen.add(n);
+            q.push(n);
+          }
+        });
+      }
+      return false;
+    }
+    function renderIssues() {
+      const b = $("#issuesBody");
+      const is = AppState.issues;
+      if (!is.length) {
+        b.innerHTML = `<div class="hint">No validation issues. ✔</div>`;
+        return;
+      }
+      b.innerHTML =
+        `<div class="hint">${is.length} issue(s). Warnings never block import or editing.</div><ul class="issues-list">` +
+        is
+          .map(
+            (i) =>
+              `<li data-id="${esc(i.id || "")}"><span class="sev ${i.sev}">${i.sev}</span><div>${esc(i.msg)}</div></li>`,
+          )
+          .join("") +
+        `</ul>`;
+      b.querySelectorAll("li[data-id]").forEach((li) => {
+        const id = li.dataset.id;
+        if (id)
+          ((li.style.cursor = "pointer"),
+            (li.onclick = () => {
+              const el = AppState.cy.getElementById(id);
+              if (el && el.length) {
+                closeOverlay("issuesOverlay");
+                AppState.cy.animate(
+                  { fit: { eles: el, padding: 120 } },
+                  { duration: 250 },
+                );
+                const l = el.data("link");
+                const n = el.data("node");
+                if (l) openDetail("link", l);
+                else if (n) openDetail("node", n);
+              }
+            }));
+      });
+    }
+    function flashIssues() {
+      const b = $("#issueBadge");
+      b.style.transition = "transform .15s";
+      b.style.transform = "scale(1.5)";
+      setTimeout(() => (b.style.transform = "scale(1)"), 200);
+    }
+
+    /* ============================================================================
+   Legend
+   ========================================================================== */
+    function renderLegend() {
+      const el = $("#legend");
+      const lineRow = (label, color, style, width) => {
+        let border;
+        const w = Math.max(2, width || 2);
+        if (style === "dotted") border = `border-top:${w}px dotted ${color}`;
+        else if (style === "dashed")
+          border = `border-top:${w}px dashed ${color}`;
+        else border = `border-top:${w}px solid ${color}`;
+        return `<div class="lrow"><span class="lline" style="${border}"></span>${esc(label)}</div>`;
+      };
+      let html = `<h4>Legend <span style="cursor:pointer;color:var(--text3)" id="legendClose">hide ✕</span></h4>`;
+      html += `<div class="lg-sec"><div style="color:var(--text3);margin-bottom:2px">Media</div>`;
+      html += lineRow("copper", "#9aa0a6", "solid", 2.5);
+      html +=
+        lineRow("fiber (SM / MM)", "#fbbc04", "solid", 2.5) +
+        lineRow("", "#ff8a00", "solid", 2.5).replace(
+          'class="lrow"',
+          'class="lrow" style="margin-top:-6px"',
+        );
+      html += lineRow("DAC", "#00bfa5", "solid", 4);
+      html += lineRow("wireless", "#4d9fff", "dashed", 2.5);
+      html += lineRow("serial", "#b39ddb", "dashed", 2.5);
+      html += `</div>`;
+      html += `<div class="lg-sec"><div style="color:var(--text3);margin:4px 0 2px">Tunnels (dotted)</div>`;
+      Object.keys(TUNNEL_COLOR).forEach(
+        (k) => (html += lineRow(k, TUNNEL_COLOR[k], "dotted", 2.5)),
+      );
+      html += `</div>`;
+      html += `<div class="lg-sec"><div style="color:var(--text3);margin:4px 0 2px">Speed → width</div>`;
+      html +=
+        lineRow("100M / 10M", "#9aa0a6", "solid", 1.5) +
+        lineRow("1G", "#9aa0a6", "solid", 2.5) +
+        lineRow("10G", "#9aa0a6", "solid", 4) +
+        lineRow("40G / 100G", "#9aa0a6", "solid", 7);
+      html += `</div>`;
+      html += `<div class="lg-sec"><div style="color:var(--text3);margin:4px 0 2px">Status / STP</div>`;
+      html += `<div class="lrow"><span style="width:34px;text-align:center">⛔</span>STP blocked</div>`;
+      html += `<div class="lrow"><span style="width:34px;text-align:center;color:#ef5350">✕</span>link down</div>`;
+      html += `<div class="lrow"><span class="lline" style="border-top:2.5px solid #9aa0a6;opacity:.4"></span>planned (40%)</div>`;
+      html += `<div class="lrow"><span style="width:34px;text-align:center">⇉</span>LAG bundle</div>`;
+      html += `</div>`;
+      el.innerHTML = html;
+      $("#legendClose").onclick = () => toggleLegend(false);
+    }
+    function toggleLegend(on) {
+      AppState.ui.legendVisible = on != null ? on : !AppState.ui.legendVisible;
+      document.body.classList.toggle(
+        "legend-hidden",
+        !AppState.ui.legendVisible,
+      );
+      $("#btnLegend").classList.toggle("active", AppState.ui.legendVisible);
+    }
+
+    /* ============================================================================
+   Filters UI
+   ========================================================================== */
+    function openFilters() {
+      const p = AppState.project;
+      const f = AppState.ui.filters;
+      const uniq = (arr) =>
+        [...new Set(arr.filter((x) => x !== "" && x != null))].sort();
+      const sites = uniq(p.nodes.map((n) => n.site));
+      const layers = uniq(p.nodes.map((n) => n.layer));
+      const ltypes = uniq(p.links.map((l) => l.link_type));
+      const medias = uniq(p.links.map((l) => l.media));
+      const statuses = uniq(p.links.map((l) => l.status));
+      const vlans = uniq([].concat(...p.links.map((l) => parseVlans(l.vlan))))
+        .sort((a, b) => a - b)
+        .map(String);
+      const grp = (title, key, vals) =>
+        `<div class="filter-group"><h5>${title} (OR)</h5><div class="chips">` +
+        (vals.length
+          ? vals
+              .map(
+                (v) =>
+                  `<span class="chip${f[key].map(String).includes(String(v)) ? " on" : ""}" data-k="${key}" data-v="${esc(v)}">${esc(v)}</span>`,
+              )
+              .join("")
+          : '<span class="hint">none</span>') +
+        `</div></div>`;
+      $("#filtersBody").innerHTML =
+        `<div class="hint">Categories combine with AND; chips within a category with OR.</div>` +
+        grp("Site", "site", sites) +
+        grp("Layer", "layer", layers) +
+        grp("Link type", "link_type", ltypes) +
+        grp("Media", "media", medias) +
+        grp("VLAN", "vlan", vlans) +
+        grp("Status", "status", statuses);
+      $$("#filtersBody .chip").forEach(
+        (c) =>
+          (c.onclick = () => {
+            const k = c.dataset.k,
+              v = c.dataset.v;
+            const list = f[k];
+            const i = list.map(String).indexOf(String(v));
+            if (i >= 0) list.splice(i, 1);
+            else list.push(v);
+            c.classList.toggle("on");
+            updateFilterBadge();
+            applyVisibility();
+          }),
+      );
+      openOverlay("filtersOverlay");
+    }
+    function updateFilterBadge() {
+      const n = activeFilterCount();
+      const b = $("#filterBadge");
+      b.textContent = n;
+      b.classList.toggle("zero", n === 0);
+      $("#btnFilters").classList.toggle("active", n > 0);
+    }
+    function clearFilters() {
+      const f = AppState.ui.filters;
+      Object.keys(f).forEach((k) => (f[k] = []));
+      updateFilterBadge();
+      applyVisibility();
+      openFilters();
+    }
+
+    /* ============================================================================
+   Settings (icon mapping + custom icons + project meta)
+   ========================================================================== */
+    function openSettings() {
+      const p = AppState.project;
+      const s = p.settings;
+      const iconChoices = NODE_TYPES.slice();
+      const customs = Object.keys(s.custom_icons || {});
+      const b = $("#settingsBody");
+      b.innerHTML =
+        `
+   <div class="field"><label>Project name</label><input id="setName" value="${esc(p.meta.name)}"/></div>
+   <div class="field two"><div><label>Author</label><input id="setAuthor" value="${esc(p.meta.author || "")}"/></div><div><label>Schema version</label><input value="${p.meta.schema_version}" readonly/></div></div>
+   <h4 style="margin:14px 0 6px">Icon mapping (per node type)</h4>
+   <div class="hint">Override the default icon used for every node of a given type.</div>
+   <div id="iconMapWrap">` +
+        NODE_TYPES.map((t) => {
+          const cur = (s.icon_map && s.icon_map[t]) || "";
+          return `<div class="map-row"><div class="col-name"><img src="${nodeIconPreview(t)}" style="width:20px;height:20px;vertical-align:middle;margin-right:6px"/>${t}</div>
+       <select class="iconMapSel" data-type="${t}"><option value="">(default)</option>${iconChoices.map((o) => `<option value="${o}"${cur === o ? " selected" : ""}>${o}</option>`).join("")}${customs.map((id) => `<option value="custom:${id}"${cur === "custom:" + id ? " selected" : ""}>custom: ${esc(id)}</option>`).join("")}</select></div>`;
+        }).join("") +
+        `</div>
+   <h4 style="margin:14px 0 6px">Custom icons</h4>
+   <div class="hint">Uploaded images are embedded as base64 in the project file (portable). ${customs.length} stored.</div>
+   <div id="customIconList">${customs.map((id) => `<span class="pill" style="margin:2px"><img src="${s.custom_icons[id]}" style="width:16px;height:16px;vertical-align:middle"/> ${esc(id)} <a href="#" data-del="${id}" style="color:var(--danger);text-decoration:none">✕</a></span>`).join("") || '<span class="hint">none</span>'}</div>
+   <button class="btn" id="setUpload" style="margin-top:8px">Upload custom icon…</button>
+   <div class="field" style="margin-top:14px"><label>Theme</label><select id="setTheme"><option value="dark"${AppState.ui.theme === "dark" ? " selected" : ""}>Dark</option><option value="light"${AppState.ui.theme === "light" ? " selected" : ""}>Light</option></select></div>`;
+      $("#setName").onchange = (e) => {
+        p.meta.name = e.target.value;
+        updateStatus();
+      };
+      $("#setAuthor").onchange = (e) => {
+        p.meta.author = e.target.value;
+      };
+      $("#setTheme").onchange = (e) => {
+        setTheme(e.target.value);
+      };
+      $$(".iconMapSel").forEach(
+        (sel) =>
+          (sel.onchange = () => {
+            pushSnapshot();
+            s.icon_map = s.icon_map || {};
+            if (sel.value) s.icon_map[sel.dataset.type] = sel.value;
+            else delete s.icon_map[sel.dataset.type];
+            fullRender();
+            toast("Icon mapping updated");
+          }),
+      );
+      $("#setUpload").onclick = () => {
+        AppState._iconTargetNode = null;
+        $("#fileIcon").click();
+      };
+      b.querySelectorAll("[data-del]").forEach(
+        (a) =>
+          (a.onclick = (e) => {
+            e.preventDefault();
+            delete s.custom_icons[a.dataset.del];
+            fullRender();
+            openSettings();
+          }),
+      );
+      openOverlay("settingsOverlay");
+    }
+    function nodeIconPreview(t) {
+      const s = AppState.project.settings;
+      const m = s.icon_map && s.icon_map[t];
+      if (m && m.indexOf("custom:") === 0)
+        return s.custom_icons[m.slice(7)] || ICONS.unknown;
+      if (m && ICONS[m]) return ICONS[m];
+      return ICONS[t];
+    }
+    function handleIconUpload(file) {
+      const r = new FileReader();
+      r.onload = () => {
+        const id = slug(file.name.replace(/\.[^.]+$/, "")) || uid("ic");
+        pushSnapshot();
+        AppState.project.settings.custom_icons =
+          AppState.project.settings.custom_icons || {};
+        AppState.project.settings.custom_icons[id] = r.result;
+        preloadIcons([r.result]);
+        if (AppState._iconTargetNode) {
+          const n = AppState.project.nodes.find(
+            (x) => x.id === AppState._iconTargetNode,
+          );
+          if (n) n.icon = "custom:" + id;
+        }
+        fullRender();
+        if ($("#settingsOverlay").classList.contains("open")) openSettings();
+        if (
+          $("#panel").classList.contains("open") &&
+          AppState._iconTargetNode
+        ) {
+          const n = AppState.project.nodes.find(
+            (x) => x.id === AppState._iconTargetNode,
+          );
+          if (n) openDetail("node", n);
+        }
+        toast("Custom icon added: " + id);
+      };
+      r.readAsDataURL(file);
+    }
+
+    /* ============================================================================
+   Export
+   ========================================================================== */
+    function pngBase(scale, transparent) {
+      return AppState.cy.png({
+        full: true,
+        scale: scale,
+        bg: transparent
+          ? undefined
+          : AppState.ui.theme === "light"
+            ? "#fbfcfe"
+            : "#0e1116",
+        output: "base64uri",
+      });
+    }
+    function exportImage(kind) {
+      const o = AppState.ui.exportOpts;
+      const scale =
+        kind === "png1" ? 1 : kind === "png2" ? 2 : kind === "png4" ? 4 : 2;
+      const jpg = kind === "jpg";
+      const dataUri = jpg
+        ? AppState.cy.jpg({
+            full: true,
+            scale: 2,
+            quality: 0.92,
+            bg: AppState.ui.theme === "light" ? "#fbfcfe" : "#0e1116",
+            output: "base64uri",
+          })
+        : pngBase(scale, o.transparent && !jpg);
+      if (!o.titleblock && !o.legendbake) {
+        download(
+          "netviz-diagram." + (jpg ? "jpg" : "png"),
+          dataURItoBlob(dataUri),
+        );
+        return;
+      }
+      compositeExport(dataUri, jpg).then((blob) =>
+        download("netviz-diagram." + (jpg ? "jpg" : "png"), blob),
+      );
+    }
+    function compositeExport(diagramUri, jpg) {
+      const o = AppState.ui.exportOpts;
+      const p = AppState.project;
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          const pad = 24,
+            titleH = o.titleblock ? 70 : 0;
+          const legendW = o.legendbake ? 270 : 0;
+          const W = img.width + pad * 2 + legendW,
+            H = img.height + pad * 2 + titleH;
+          const c = document.createElement("canvas");
+          c.width = W;
+          c.height = H;
+          const ctx = c.getContext("2d");
+          const dark = AppState.ui.theme !== "light";
+          if (jpg || !o.transparent) {
+            ctx.fillStyle = dark ? "#0e1116" : "#ffffff";
+            ctx.fillRect(0, 0, W, H);
+          }
+          // title block
+          if (o.titleblock) {
+            ctx.fillStyle = dark ? "#161b22" : "#f4f6fa";
+            ctx.fillRect(0, 0, W, titleH);
+            ctx.fillStyle = dark ? "#4d9fff" : "#2b7de0";
+            ctx.font = "bold 22px system-ui,sans-serif";
+            ctx.textBaseline = "middle";
+            ctx.fillText(p.meta.name || "Network Diagram", pad, titleH / 2 - 8);
+            ctx.fillStyle = dark ? "#9aa4b2" : "#5a6472";
+            ctx.font = "12px system-ui,sans-serif";
+            const meta = `Nodes: ${p.nodes.length}   Links: ${p.links.length}   ${p.meta.author ? "Author: " + p.meta.author + "   " : ""}Exported: ${new Date().toISOString().slice(0, 10)}`;
+            ctx.fillText(meta, pad, titleH / 2 + 14);
+            ctx.strokeStyle = dark ? "#2a3342" : "#d7dde7";
+            ctx.beginPath();
+            ctx.moveTo(0, titleH);
+            ctx.lineTo(W, titleH);
+            ctx.stroke();
+          }
+          ctx.drawImage(img, pad, titleH + pad);
+          // legend
+          if (o.legendbake)
+            drawLegend(
+              ctx,
+              img.width + pad * 2,
+              titleH + pad,
+              legendW - pad,
+              dark,
+            );
+          c.toBlob((b) => resolve(b), jpg ? "image/jpeg" : "image/png", 0.92);
+        };
+        img.src = diagramUri;
+      });
+    }
+    function drawLegend(ctx, x, y, w, dark) {
+      const tcol = dark ? "#e6e9ef" : "#1a2230",
+        scol = dark ? "#9aa4b2" : "#5a6472";
+      let ly = y + 6;
+      ctx.textBaseline = "middle";
+      const head = (t) => {
+        ctx.fillStyle = scol;
+        ctx.font = "bold 11px system-ui";
+        ctx.fillText(t.toUpperCase(), x, ly);
+        ly += 18;
+      };
+      const line = (label, color, style, width) => {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = width;
+        ctx.beginPath();
+        if (style === "dotted") ctx.setLineDash([2, 4]);
+        else if (style === "dashed") ctx.setLineDash([7, 4]);
+        else ctx.setLineDash([]);
+        ctx.moveTo(x, ly);
+        ctx.lineTo(x + 34, ly);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = tcol;
+        ctx.font = "12px system-ui";
+        ctx.fillText(label, x + 42, ly);
+        ly += 19;
+      };
+      ctx.fillStyle = tcol;
+      ctx.font = "bold 14px system-ui";
+      ctx.fillText("Legend", x, ly);
+      ly += 22;
+      head("Media");
+      line("copper", "#9aa0a6", "solid", 2.5);
+      line("fiber-sm", "#fbbc04", "solid", 2.5);
+      line("fiber-mm", "#ff8a00", "solid", 2.5);
+      line("dac", "#00bfa5", "solid", 4);
+      line("wireless", "#4d9fff", "dashed", 2.5);
+      line("serial", "#b39ddb", "dashed", 2.5);
+      head("Tunnels");
+      Object.keys(TUNNEL_COLOR).forEach((k) =>
+        line(k, TUNNEL_COLOR[k], "dotted", 2.5),
+      );
+      head("Speed");
+      line("100M", "#9aa0a6", "solid", 1.5);
+      line("1G", "#9aa0a6", "solid", 2.5);
+      line("10G", "#9aa0a6", "solid", 4);
+      line("100G", "#9aa0a6", "solid", 7);
+    }
+    function dataURItoBlob(uri) {
+      const parts = uri.split(",");
+      const mime = parts[0].match(/:(.*?);/)[1];
+      const bin = atob(parts[1]);
+      const arr = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+      return new Blob([arr], { type: mime });
+    }
+    function projectForSave() {
+      persistPositions();
+      const p = clone(AppState.project);
+      p.settings.theme = AppState.ui.theme;
+      p.settings.layout = AppState.ui.layout;
+      p.meta.modified = new Date().toISOString();
+      // strip runtime-only fields
+      p.links.forEach((l) => {
+        delete l._s;
+        delete l._t;
+        delete l._warn;
+      });
+      p.nodes.forEach((n) => {
+        delete n._warn;
+      });
+      return p;
+    }
+    function exportJSON() {
+      download(
+        fname("json"),
+        JSON.stringify(projectForSave(), null, 2),
+        "application/json",
+      );
+    }
+    function exportYAML() {
+      download(fname("yaml"), jsyaml.dump(projectForSave()), "text/yaml");
+    }
+    function fname(ext) {
+      return (slug(AppState.project.meta.name) || "netviz-project") + "." + ext;
+    }
+    function exportCSV() {
+      const p = AppState.project;
+      const nodeCsv = Papa.unparse(
+        p.nodes.map((n) => ({
+          name: n.name,
+          type: n.type,
+          mgmt_ip: n.mgmt_ip,
+          site: n.site,
+          layer: n.layer,
+          vendor: n.vendor,
+          model: n.model,
+          icon: n.icon,
+          notes: n.notes,
+          x: n.x,
+          y: n.y,
+        })),
+      );
+      const linkCsv = Papa.unparse(
+        p.links.map((l) => ({
+          source: nodeName(l._s || resolveNode(l.source)),
+          target: nodeName(l._t || resolveNode(l.target)),
+          source_if: l.source_if,
+          target_if: l.target_if,
+          speed: l.speed,
+          media: l.media,
+          link_type: l.link_type,
+          stp_state: l.stp_state,
+          vlan: l.vlan,
+          subnet: l.subnet,
+          status: l.status,
+          bandwidth_committed: l.bandwidth_committed,
+          provider: l.provider,
+          circuit_id: l.circuit_id,
+          description: l.description,
+        })),
+      );
+      download("nodes.csv", nodeCsv, "text/csv");
+      setTimeout(() => download("links.csv", linkCsv, "text/csv"), 250);
+      toast("Exported nodes.csv and links.csv");
+    }
+    function exportReport() {
+      const p = AppState.project;
+      const html = buildReportHTML(pngBase(2, false));
+      download(
+        (slug(p.meta.name) || "netviz") + "-report.html",
+        html,
+        "text/html",
+      );
+      toast("HTML report exported");
+    }
+    function buildReportHTML(img) {
+      const p = AppState.project;
+      const sites = {};
+      p.nodes.forEach((n) => {
+        (sites[n.site || "(unassigned)"] =
+          sites[n.site || "(unassigned)"] || []).push(n);
+      });
+      const linkRows = p.links
+        .map(
+          (l) =>
+            `<tr><td>${esc(nodeName(l._s || resolveNode(l.source)))}</td><td>${esc(l.source_if)}</td><td>${esc(nodeName(l._t || resolveNode(l.target)))}</td><td>${esc(l.target_if)}</td><td>${esc(l.speed)}</td><td>${esc(l.media)}</td><td>${esc(l.link_type)}</td><td>${esc(l.vlan)}</td><td>${esc(l.subnet)}</td><td>${esc(l.status)}</td><td>${esc(l.provider)}</td><td>${esc(l.circuit_id)}</td></tr>`,
+        )
+        .join("");
+      const siteBlocks = Object.keys(sites)
+        .sort()
+        .map(
+          (s) =>
+            `<h3>Site: ${esc(s)} <small>(${sites[s].length} nodes)</small></h3>
+    <table><thead><tr><th>Name</th><th>Type</th><th>Mgmt IP</th><th>Layer</th><th>Vendor</th><th>Model</th></tr></thead><tbody>` +
+            sites[s]
+              .map(
+                (n) =>
+                  `<tr><td>${esc(n.name)}</td><td>${esc(n.type)}</td><td>${esc(n.mgmt_ip)}</td><td>${esc(n.layer)}</td><td>${esc(n.vendor)}</td><td>${esc(n.model)}</td></tr>`,
+              )
+              .join("") +
+            `</tbody></table>`,
+        )
+        .join("");
+      const html = `<!doctype html><html><head><meta charset="utf-8"><title>${esc(p.meta.name)} — Network Documentation</title>
+  <style>body{font-family:system-ui,Segoe UI,Roboto,sans-serif;margin:0;background:#0e1116;color:#e6e9ef}
+  .wrap{max-width:1100px;margin:0 auto;padding:28px}h1{color:#4d9fff;margin:0 0 4px}h2{border-bottom:2px solid #2a3342;padding-bottom:6px;margin-top:34px}
+  h3{color:#9aa4b2}small{color:#6b7686;font-weight:400}.meta{color:#9aa4b2;margin-bottom:16px}
+  img{max-width:100%;border:1px solid #2a3342;border-radius:8px;background:#fff}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;margin:8px 0 18px}th,td{border:1px solid #2a3342;padding:5px 8px;text-align:left}
+  th{background:#161b22;color:#9aa4b2}tr:nth-child(even){background:rgba(255,255,255,.02)}</style></head>
+  <body><div class="wrap">
+  <h1>${esc(p.meta.name)}</h1>
+  <div class="meta">Network Documentation Report · Generated ${new Date().toISOString().slice(0, 19).replace("T", " ")}${p.meta.author ? " · " + esc(p.meta.author) : ""} · ${p.nodes.length} nodes · ${p.links.length} links</div>
+  <h2>Topology Diagram</h2><img src="${img}" alt="diagram"/>
+  <h2>Link Inventory (${p.links.length})</h2>
+  <table><thead><tr><th>Source</th><th>Src If</th><th>Target</th><th>Tgt If</th><th>Speed</th><th>Media</th><th>Type</th><th>VLAN</th><th>Subnet</th><th>Status</th><th>Provider</th><th>Circuit</th></tr></thead><tbody>${linkRows}</tbody></table>
+  <h2>Node Inventory by Site</h2>${siteBlocks}
+  <p style="color:#6b7686;margin-top:30px">Generated by netviz.</p>
+  </div></body></html>`;
+      return html;
+    }
+
+    /* ============================================================================
+   Status bar / autosave / theme
+   ========================================================================== */
+    function updateStatus() {
+      const p = AppState.project,
+        cy = AppState.cy;
+      const vis = cy
+        ? cy.elements("node:visible").filter((n) => !n.isParent()).length
+        : 0;
+      $("#statusbar").textContent =
+        `${p.meta.name} · ${p.nodes.length} nodes / ${p.links.length} links${activeFilterCount() ? " · " + activeFilterCount() + " filters" : ""} · zoom ${cy ? Math.round(cy.zoom() * 100) : 100}%`;
+    }
+    function saveAutosave() {
+      try {
+        localStorage.setItem(
+          "netviz:autosave",
+          JSON.stringify(projectForSave()),
+        );
+      } catch (e) {
+        /* ignore */
+      }
+    }
+    function loadAutosave() {
+      try {
+        const s = localStorage.getItem("netviz:autosave");
+        if (s) return JSON.parse(s);
+      } catch (e) {}
+      return null;
+    }
+    function setTheme(t) {
+      AppState.ui.theme = t;
+      AppState.project.settings.theme = t;
+      applyTheme();
+      if (AppState.cy) {
+        AppState.cy.style(buildStylesheet());
+      }
+      renderLegend();
+    }
+    function applyTheme() {
+      document.body.classList.toggle("light", AppState.ui.theme === "light");
+    }
+    function toggleTheme() {
+      setTheme(AppState.ui.theme === "light" ? "dark" : "light");
+    }
+    function onSelectGroup(id) {
+      AppState.ui.selectedGroup = id;
+    }
+
+    /* ============================================================================
+   Menu helpers
+   ========================================================================== */
+    function openOverlay(id) {
+      $("#" + id).classList.add("open");
+    }
+    function closeOverlay(id) {
+      $("#" + id).classList.remove("open");
+    }
+    function markMenuActive(sel, attr, val) {
+      $$(sel + " .mi[" + attr + "]").forEach((mi) =>
+        mi.classList.toggle("active", mi.getAttribute(attr) === val),
+      );
+    }
+    function toggleMenu(id) {
+      const m = $("#" + id);
+      const open = m.classList.contains("open");
+      $$(".menu").forEach((x) => x.classList.remove("open"));
+      if (!open) m.classList.add("open");
+    }
+
+    /* ============================================================================
+   Wire UI
+   ========================================================================== */
+    function wireUI() {
+      $("#btnNew").onclick = () => {
+        if (
+          AppState.project.nodes.length &&
+          !confirm("Start a new empty project? Unsaved changes will be lost.")
+        )
+          return;
+        AppState.project = emptyProject();
+        AppState.undo = [];
+        AppState.redo = [];
+        AppState.ui.selectedId = null;
+        fullRender();
+        closeDetail();
+        toast("New project");
+      };
+      $("#btnOpen").onclick = () => $("#fileProject").click();
+      $("#btnSave").onclick = exportJSON;
+      $("#btnImport").onclick = () => $("#fileCsv").click();
+      $("#fileProject").onchange = (e) => {
+        if (e.target.files[0]) importProjectFile(e.target.files[0]);
+        e.target.value = "";
+      };
+      $("#fileCsv").onchange = (e) => {
+        if (e.target.files.length) importCsvFiles(e.target.files);
+        e.target.value = "";
+      };
+      $("#fileIcon").onchange = (e) => {
+        if (e.target.files[0]) handleIconUpload(e.target.files[0]);
+        e.target.value = "";
+      };
+
+      $("#btnExport").onclick = () => toggleMenu("exportMenu");
+      $("#exportMenu").addEventListener("click", (e) => {
+        const mi = e.target.closest(".mi");
+        if (!mi) return;
+        if (mi.dataset.toggle) {
+          const k = mi.dataset.toggle;
+          const map = {
+            transparent: "transparent",
+            titleblock: "titleblock",
+            legendbake: "legendbake",
+          };
+          AppState.ui.exportOpts[map[k]] = !AppState.ui.exportOpts[map[k]];
+          mi.classList.toggle("on", AppState.ui.exportOpts[map[k]]);
+          return;
+        }
+        const exp = mi.dataset.exp;
+        if (!exp) return;
+        toggleMenu("exportMenu");
+        if (exp === "json") exportJSON();
+        else if (exp === "yaml") exportYAML();
+        else if (exp === "csv") exportCSV();
+        else if (exp === "report") exportReport();
+        else exportImage(exp);
+      });
+
+      $("#btnAddNode").onclick = () => addNode();
+      $("#btnDrawLink").onclick = () => toggleDrawMode();
+      $("#btnLayout").onclick = () => toggleMenu("layoutMenu");
+      $("#layoutMenu").addEventListener("click", (e) => {
+        const mi = e.target.closest(".mi[data-layout]");
+        if (!mi) return;
+        toggleMenu("layoutMenu");
+        runLayout(mi.dataset.layout, true);
+      });
+      $("#btnGroup").onclick = () => {
+        AppState.ui.grouped = !AppState.ui.grouped;
+        $("#btnGroup").classList.toggle("active", AppState.ui.grouped);
+        fullRender({ layout: true });
+      };
+      $("#btnFit").onclick = () =>
+        AppState.cy.fit(AppState.cy.elements(":visible"), 40);
+      $("#btnFilters").onclick = openFilters;
+      $("#filtersClear").onclick = clearFilters;
+      $("#btnOverlay").onclick = () => toggleMenu("overlayMenu");
+      $("#overlayMenu").addEventListener("click", (e) => {
+        const mi = e.target.closest(".mi");
+        if (!mi) return;
+        if (mi.dataset.overlay) {
+          AppState.ui.overlay = mi.dataset.overlay;
+          markMenuActive("#overlayMenu", "data-overlay", mi.dataset.overlay);
+          applyVisibility();
+          $("#btnOverlay").classList.toggle(
+            "active",
+            mi.dataset.overlay !== "combined",
+          );
+          return;
+        }
+        if (mi.dataset.toggle === "vlancolor") {
+          AppState.ui.vlanColoring = !AppState.ui.vlanColoring;
+          mi.classList.toggle("on", AppState.ui.vlanColoring);
+          fullRender();
+        }
+        if (mi.dataset.toggle === "showdecom") {
+          AppState.ui.showDecom = !AppState.ui.showDecom;
+          mi.classList.toggle("on", AppState.ui.showDecom);
+          applyVisibility();
+        }
+      });
+      markMenuActive("#overlayMenu", "data-overlay", "combined");
+      $("#btnLegend").onclick = () => toggleLegend();
+      $("#btnTheme").onclick = toggleTheme;
+      $("#btnUndo").onclick = undo;
+      $("#btnRedo").onclick = redo;
+      $("#btnIssues").onclick = () => {
+        renderIssues();
+        openOverlay("issuesOverlay");
+      };
+      $("#btnSettings").onclick = openSettings;
+
+      // search
+      const search = $("#search");
+      search.addEventListener("input", () => {
+        AppState.ui.search = search.value;
+        $("#searchClear").style.display = search.value ? "block" : "none";
+        applyVisibility();
+      });
+      $("#searchClear").onclick = () => {
+        search.value = "";
+        AppState.ui.search = "";
+        $("#searchClear").style.display = "none";
+        applyVisibility();
+      };
+
+      // bulk
+      $("#bulkApply").onclick = applyBulk;
+      $("#bulkDelete").onclick = bulkDelete;
+
+      // overlay close buttons
+      $$("[data-close]").forEach(
+        (b) => (b.onclick = () => closeOverlay(b.dataset.close)),
+      );
+      $$(".overlay").forEach((o) =>
+        o.addEventListener("mousedown", (e) => {
+          if (e.target === o) closeOverlay(o.id);
+        }),
+      );
+
+      // global click closes menus/context
+      document.addEventListener("click", (e) => {
+        if (!e.target.closest(".dropdown"))
+          $$(".menu").forEach((m) => m.classList.remove("open"));
+        if (!e.target.closest("#contextMenu")) hideContext();
+      });
+
+      // keyboard
+      document.addEventListener("keydown", (e) => {
+        const inField =
+          /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName) ||
+          document.activeElement.isContentEditable;
+        if (e.key === "Escape") {
+          if (AppState.ui.drawMode) toggleDrawMode(false);
+          $$(".overlay.open").forEach((o) => closeOverlay(o.id));
+          hideContext();
+          closeDetail();
+          return;
+        }
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z") {
+          e.preventDefault();
+          undo();
+          return;
+        }
+        if (
+          (e.ctrlKey || e.metaKey) &&
+          (e.key.toLowerCase() === "y" ||
+            (e.shiftKey && e.key.toLowerCase() === "z"))
+        ) {
+          e.preventDefault();
+          redo();
+          return;
+        }
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+          e.preventDefault();
+          exportJSON();
+          return;
+        }
+        if (inField) return;
+        if (e.key === "/") {
+          e.preventDefault();
+          search.focus();
+          return;
+        }
+        if (e.key === "f" || e.key === "F") {
+          AppState.cy.fit(AppState.cy.elements(":visible"), 40);
+          return;
+        }
+        if (e.key === "Delete" || e.key === "Backspace") {
+          const selN = AppState.cy
+            .nodes(":selected")
+            .filter((n) => !n.isParent());
+          const selE = AppState.cy.edges(":selected");
+          if (selN.length > 1) {
+            bulkDelete();
+          } else if (selN.length === 1) {
+            deleteNode(selN[0].id());
+            closeDetail();
+          } else if (selE.length === 1) {
+            deleteLink(selE[0].id());
+            closeDetail();
+          }
+        }
+      });
+    }
+
+    /* ============================================================================
+   Boot
+   ========================================================================== */
+    function boot() {
+      if (typeof cytoscape === "undefined") {
+        document.body.innerHTML =
+          '<div style="padding:40px;font-family:system-ui;color:#e6e9ef;background:#0e1116;height:100vh">Failed to load Cytoscape.js from CDN. Connect to the internet for first load, then it works offline.</div>';
+        return;
+      }
+      AppState.project = emptyProject();
+      applyTheme();
+      preloadIcons();
+      initCy();
+      wireUI();
+      toggleLegend(true);
+      fullRender();
+      updateStatus();
+      // expose for debugging / headless verification
+      window.netviz = {
+        AppState,
+        importCsvText,
+        exportProjectObject: projectForSave,
+        loadProject,
+        runLayout,
+        validate,
+        ICONS,
+        fullRender,
+        applyVisibility,
+        undo,
+        redo,
+        addNode,
+        deleteNode,
+        deleteLink,
+        toggleDrawMode,
+        handleDrawClick,
+        openDetail,
+        saveNodeEdit,
+        saveLinkEdit,
+        parseVlans,
+        setTheme,
+        preloadIcons,
+        computeEdgeVisuals,
+        nodeIcon,
+        exportReportHTML: buildReportHTML,
+        pngBase,
+        compositeExport,
+        exportImage,
+      };
+      console.log("netviz ready");
+    }
+    /* Programmatic CSV import (used by tests / headless demo generation) */
+    function importCsvText(nodesCsv, linksCsv, mode) {
+      mode = mode || "merge-add";
+      const warnings = [];
+      if (mode === "replace") {
+        AppState.project.nodes = [];
+        AppState.project.links = [];
+      }
+      if (nodesCsv) {
+        const r = Papa.parse(nodesCsv, { header: true, skipEmptyLines: true });
+        r.data.forEach((row) => {
+          if (row.name || row.id) {
+            const nn = normNode(row, warnings);
+            const ex = AppState.project.nodes.find(
+              (x) => x.id === nn.id || x.name === nn.name,
+            );
+            if (!ex) AppState.project.nodes.push(nn);
+          }
+        });
+      }
+      if (linksCsv) {
+        const r = Papa.parse(linksCsv, { header: true, skipEmptyLines: true });
+        r.data.forEach((row) => {
+          if (row.source && row.target)
+            AppState.project.links.push(normLink(row, warnings));
+        });
+      }
+      _needsLayout = hasUnpositioned();
+      fullRender({ layout: _needsLayout });
+      return { warnings, issues: AppState.issues };
+    }
+
+    if (document.readyState === "loading")
+      document.addEventListener("DOMContentLoaded", boot);
+    else boot();
+  })();
+</script>

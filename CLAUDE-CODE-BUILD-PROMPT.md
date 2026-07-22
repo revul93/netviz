@@ -110,39 +110,39 @@ On import and on edit, flag: duplicate link IDs; duplicate links between the sam
 ```csv
 name,type,mgmt_ip,site,layer,vendor,model
 INTERNET,internet,,WAN,wan,,
-MPLS-CLOUD,cloud,,WAN,wan,STC,
-JCC-FGT01,firewall,10.10.0.1,JCC,edge,Fortinet,FortiGate-200F
-JCC-CORE01,l3-switch,10.10.0.2,JCC,core,Cisco,WS-C3750G
-JCC-ACC-SW01,l2-switch,10.10.0.11,JCC,access,Cisco,WS-C2960
-JCC-ACC-SW02,l2-switch,10.10.0.12,JCC,access,Cisco,WS-C2960
-JCC-ESX01,hypervisor,10.10.0.21,JCC,access,VMware,ESXi 7
-JCC-VEEAM01,server,10.10.0.31,JCC,access,Dell,R740
-JCC-AP01,access-point,10.10.0.41,JCC,access,Cisco,AIR-2802
-RBG-FGT01,firewall,10.20.0.1,RBG,edge,Fortinet,FortiGate-100F
-RBG-CORE01,l3-switch,10.20.0.2,RBG,core,Cisco,WS-C3750G
-RBG-ACC-SW01,l2-switch,10.20.0.11,RBG,access,Cisco,WS-C2960
+MPLS-CLOUD,cloud,,WAN,wan,Carrier-A,
+HQ-FGT01,firewall,10.10.0.1,HQ,edge,Fortinet,FortiGate-200F
+HQ-CORE01,l3-switch,10.10.0.2,HQ,core,Cisco,WS-C3750G
+HQ-ACC-SW01,l2-switch,10.10.0.11,HQ,access,Cisco,WS-C2960
+HQ-ACC-SW02,l2-switch,10.10.0.12,HQ,access,Cisco,WS-C2960
+HQ-ESX01,hypervisor,10.10.0.21,HQ,access,VMware,ESXi 7
+HQ-VEEAM01,server,10.10.0.31,HQ,access,Dell,R740
+HQ-AP01,access-point,10.10.0.41,HQ,access,Cisco,AIR-2802
+BR-FGT01,firewall,10.20.0.1,BR,edge,Fortinet,FortiGate-100F
+BR-CORE01,l3-switch,10.20.0.2,BR,core,Cisco,WS-C3750G
+BR-ACC-SW01,l2-switch,10.20.0.11,BR,access,Cisco,WS-C2960
 ```
 
 ### links.csv
 
 ```csv
 source,target,source_if,target_if,speed,media,link_type,stp_state,vlan,subnet,status,provider,circuit_id,description
-JCC-FGT01,INTERNET,wan1,,1G,fiber-sm,physical,n/a,,203.0.113.0/29,up,ISP-A,CKT-1001,Primary internet
-JCC-FGT01,MPLS-CLOUD,wan2,,100M,fiber-sm,physical,n/a,,10.99.1.0/30,up,STC,MPLS-JCC-01,MPLS access circuit
-RBG-FGT01,MPLS-CLOUD,wan2,,100M,fiber-sm,physical,n/a,,10.99.2.0/30,up,STC,MPLS-RBG-01,MPLS access circuit
-RBG-FGT01,INTERNET,wan1,,500M,fiber-sm,physical,n/a,,198.51.100.0/29,up,ISP-B,CKT-2001,RBG internet
-JCC-FGT01,RBG-FGT01,,,100M,virtual,mpls,n/a,,10.255.0.0/30,up,STC,,BGP over MPLS
-JCC-FGT01,RBG-FGT01,,,,virtual,ipsec,n/a,,10.255.1.0/30,up,,,IPSec failover tunnel over internet
-JCC-FGT01,JCC-CORE01,port1,Gi1/0/48,1G,copper,physical,forwarding,1-4094,,up,,,Core uplink trunk
-JCC-CORE01,JCC-ACC-SW01,Gi1/0/1,Gi0/48,1G,fiber-mm,physical,forwarding,"10,20,30",,up,,,Access uplink
-JCC-CORE01,JCC-ACC-SW02,Gi1/0/2,Gi0/48,1G,fiber-mm,physical,forwarding,"10,20,30",,up,,,Access uplink
-JCC-ACC-SW01,JCC-ACC-SW02,Gi0/47,Gi0/47,1G,copper,physical,blocked,"10,20,30",,up,,,Redundant inter-switch link
-JCC-CORE01,JCC-ESX01,Gi1/0/10,vmnic0,10G,dac,physical,forwarding,"20,30",,up,,,ESXi trunk
-JCC-CORE01,JCC-VEEAM01,Gi1/0/11,eth0,1G,copper,physical,forwarding,30,,up,,,Backup server
-JCC-ACC-SW01,JCC-AP01,Gi0/10,eth0,1G,copper,physical,forwarding,"10,40",,up,,,AP trunk
-RBG-FGT01,RBG-CORE01,port1,Gi1/0/48,1G,copper,physical,forwarding,1-4094,,up,,,Core uplink
-RBG-CORE01,RBG-ACC-SW01,Gi1/0/1,Gi0/48,1G,fiber-mm,physical,forwarding,"10,20",,up,,,Access uplink
-JCC-CORE01,RBG-CORE01,,,,virtual,logical,n/a,,10.254.0.0/30,planned,,,Future L3 DCI
+HQ-FGT01,INTERNET,wan1,,1G,fiber-sm,physical,n/a,,203.0.113.0/29,up,ISP-A,CKT-1001,Primary internet
+HQ-FGT01,MPLS-CLOUD,wan2,,100M,fiber-sm,physical,n/a,,10.99.1.0/30,up,Carrier-A,MPLS-HQ-01,MPLS access circuit
+BR-FGT01,MPLS-CLOUD,wan2,,100M,fiber-sm,physical,n/a,,10.99.2.0/30,up,Carrier-A,MPLS-BR-01,MPLS access circuit
+BR-FGT01,INTERNET,wan1,,500M,fiber-sm,physical,n/a,,198.51.100.0/29,up,ISP-B,CKT-2001,BR internet
+HQ-FGT01,BR-FGT01,,,100M,virtual,mpls,n/a,,10.255.0.0/30,up,Carrier-A,,BGP over MPLS
+HQ-FGT01,BR-FGT01,,,,virtual,ipsec,n/a,,10.255.1.0/30,up,,,IPSec failover tunnel over internet
+HQ-FGT01,HQ-CORE01,port1,Gi1/0/48,1G,copper,physical,forwarding,1-4094,,up,,,Core uplink trunk
+HQ-CORE01,HQ-ACC-SW01,Gi1/0/1,Gi0/48,1G,fiber-mm,physical,forwarding,"10,20,30",,up,,,Access uplink
+HQ-CORE01,HQ-ACC-SW02,Gi1/0/2,Gi0/48,1G,fiber-mm,physical,forwarding,"10,20,30",,up,,,Access uplink
+HQ-ACC-SW01,HQ-ACC-SW02,Gi0/47,Gi0/47,1G,copper,physical,blocked,"10,20,30",,up,,,Redundant inter-switch link
+HQ-CORE01,HQ-ESX01,Gi1/0/10,vmnic0,10G,dac,physical,forwarding,"20,30",,up,,,ESXi trunk
+HQ-CORE01,HQ-VEEAM01,Gi1/0/11,eth0,1G,copper,physical,forwarding,30,,up,,,Backup server
+HQ-ACC-SW01,HQ-AP01,Gi0/10,eth0,1G,copper,physical,forwarding,"10,40",,up,,,AP trunk
+BR-FGT01,BR-CORE01,port1,Gi1/0/48,1G,copper,physical,forwarding,1-4094,,up,,,Core uplink
+BR-CORE01,BR-ACC-SW01,Gi1/0/1,Gi0/48,1G,fiber-mm,physical,forwarding,"10,20",,up,,,Access uplink
+HQ-CORE01,BR-CORE01,,,,virtual,logical,n/a,,10.254.0.0/30,planned,,,Future L3 DCI
 ```
 
 ## Acceptance Checks (run every one; record results in TESTING.md)
@@ -153,7 +153,7 @@ JCC-CORE01,RBG-CORE01,,,,virtual,logical,n/a,,10.254.0.0/30,planned,,,Future L3 
 4. Undo reverts the edit; redo reapplies.
 5. Add a node and draw a link from scratch in an empty project — no import required.
 6. Toggle overlay to tunnels-only → only ipsec/mpls/logical links visible. Filter VLAN=10 → only VLAN-10-carrying links highlighted/visible.
-7. Change firewall icon mapping in settings → both firewalls update. Upload a custom PNG for JCC-FGT01 → only it changes. Save project, reload page, open project → icons, positions, and edits all survive (verify custom icon is embedded base64).
+7. Change firewall icon mapping in settings → both firewalls update. Upload a custom PNG for HQ-FGT01 → only it changes. Save project, reload page, open project → icons, positions, and edits all survive (verify custom icon is embedded base64).
 8. Export PNG 4x with legend + title block — verify file opens and is legible. Export JSON, reopen in a fresh tab → identical diagram including manual positions.
 9. Export the HTML documentation report → contains diagram image, link table, per-site node inventory.
 10. Validation: import a CSV row with `media=coax` and a self-loop → issues panel lists both as warnings; import still succeeds.

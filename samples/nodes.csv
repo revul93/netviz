@@ -1,13 +1,13 @@
 name,type,mgmt_ip,site,layer,vendor,model
 INTERNET,internet,,WAN,wan,,
-MPLS-CLOUD,cloud,,WAN,wan,STC,
-JCC-FGT01,firewall,10.10.0.1,JCC,edge,Fortinet,FortiGate-200F
-JCC-CORE01,l3-switch,10.10.0.2,JCC,core,Cisco,WS-C3750G
-JCC-ACC-SW01,l2-switch,10.10.0.11,JCC,access,Cisco,WS-C2960
-JCC-ACC-SW02,l2-switch,10.10.0.12,JCC,access,Cisco,WS-C2960
-JCC-ESX01,hypervisor,10.10.0.21,JCC,access,VMware,ESXi 7
-JCC-VEEAM01,server,10.10.0.31,JCC,access,Dell,R740
-JCC-AP01,access-point,10.10.0.41,JCC,access,Cisco,AIR-2802
-RBG-FGT01,firewall,10.20.0.1,RBG,edge,Fortinet,FortiGate-100F
-RBG-CORE01,l3-switch,10.20.0.2,RBG,core,Cisco,WS-C3750G
-RBG-ACC-SW01,l2-switch,10.20.0.11,RBG,access,Cisco,WS-C2960
+MPLS-CLOUD,cloud,,WAN,wan,Carrier-A,
+HQ-FGT01,firewall,10.10.0.1,HQ,edge,Fortinet,FortiGate-200F
+HQ-CORE01,l3-switch,10.10.0.2,HQ,core,Cisco,WS-C3750G
+HQ-ACC-SW01,l2-switch,10.10.0.11,HQ,access,Cisco,WS-C2960
+HQ-ACC-SW02,l2-switch,10.10.0.12,HQ,access,Cisco,WS-C2960
+HQ-ESX01,hypervisor,10.10.0.21,HQ,access,VMware,ESXi 7
+HQ-VEEAM01,server,10.10.0.31,HQ,access,Dell,R740
+HQ-AP01,access-point,10.10.0.41,HQ,access,Cisco,AIR-2802
+BR-FGT01,firewall,10.20.0.1,BR,edge,Fortinet,FortiGate-100F
+BR-CORE01,l3-switch,10.20.0.2,BR,core,Cisco,WS-C3750G
+BR-ACC-SW01,l2-switch,10.20.0.11,BR,access,Cisco,WS-C2960

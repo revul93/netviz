@@ -77,10 +77,10 @@ toolbar **Add Node** button was also confirmed via a real DOM `click()`.)
 
 ### 7. Icon mapping + custom icon + save/reload survival — PASS
 
-- Set `icon_map.firewall = router` → both `JCC-FGT01` and `RBG-FGT01` resolve to the
+- Set `icon_map.firewall = router` → both `HQ-FGT01` and `BR-FGT01` resolve to the
   router icon. ✔
-- Uploaded a custom image for `JCC-FGT01` (`icon: custom:<id>`) → only `JCC-FGT01` uses
-  the custom icon; `RBG-FGT01` still follows the type mapping. ✔
+- Uploaded a custom image for `HQ-FGT01` (`icon: custom:<id>`) → only `HQ-FGT01` uses
+  the custom icon; `BR-FGT01` still follows the type mapping. ✔
 - The custom icon is embedded as base64 in the saved project. ✔
 - Serialize → reload (`loadProject`) → 12 nodes / 16 links, **all positions identical**,
   per-node icon preserved, `custom_icons` and `icon_map` survived. ✔
@@ -88,7 +88,7 @@ toolbar **Add Node** button was also confirmed via a real DOM `click()`.)
 ### 8. Export PNG 4× with legend + title block; JSON round-trip — PASS
 
 Exported a 4× PNG with title block + baked-in legend (387 KB). Inspected image: legible
-title (`Sample Network - JCC + RBG`), metadata line (nodes/links/author/export date),
+title (`Sample Network - HQ + BR`), metadata line (nodes/links/author/export date),
 full diagram with icons, and a right-side legend (Media / Tunnels / Speed). JSON export
 reopened in a fresh load reproduces the identical diagram including manual positions
 (verified in check 7). See `samples/demo-project.json`.
@@ -97,7 +97,7 @@ reopened in a fresh load reproduces the identical diagram including manual posit
 
 Generated report contains: an embedded `data:image/png;base64,...` diagram `<img>`; a
 **Link Inventory** table with the expected columns (Source, Src If, Target, …); and a
-**Node Inventory by Site** section with per-site tables for `JCC`, `RBG`, and `WAN`.
+**Node Inventory by Site** section with per-site tables for `HQ`, `BR`, and `WAN`.
 
 ### 10. Validation: `media=coax` and a self-loop → both warned, import still succeeds — PASS
 
@@ -119,7 +119,7 @@ and loads back cleanly (verified via `loadProject`).
 
 - **Layouts** — fCoSE, hierarchical (by layer), circular-per-site, and grid all run
   without error.
-- **Grouping** — Group by Site produces compound parents `JCC`, `RBG`, `WAN`, each with
+- **Grouping** — Group by Site produces compound parents `HQ`, `BR`, `WAN`, each with
   its child nodes.
 - **Search** — matches across name / mgmt IP / vendor / model / site and highlights +
   zooms to hits.

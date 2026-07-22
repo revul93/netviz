@@ -71,6 +71,8 @@
     color: var(--text);
     overflow: hidden;
     font-size: 13px;
+    display: flex;
+    flex-direction: column;
   }
   button {
     font-family: inherit;
@@ -86,6 +88,7 @@
   /* ---- Toolbar ---- */
   #toolbar {
     height: var(--tb-h);
+    flex: none;
     display: flex;
     align-items: center;
     gap: 6px;
@@ -229,10 +232,12 @@
     flex: none;
   }
   .menu {
-    position: absolute;
-    top: 34px;
+    position: fixed;
+    top: 0;
     left: 0;
     min-width: 210px;
+    max-height: calc(100vh - 60px);
+    overflow-y: auto;
     background: var(--panel);
     border: 1px solid var(--border);
     border-radius: 8px;
@@ -288,11 +293,9 @@
 
   /* ---- Layout ---- */
   #main {
-    position: absolute;
-    top: var(--tb-h);
-    left: 0;
-    right: 0;
-    bottom: 0;
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
     display: flex;
   }
   #cyWrap {
@@ -308,14 +311,21 @@
   body.light #cy {
     background: #fbfcfe;
   }
+  /* The expand-collapse plugin injects a canvas with inline z-index:999, which
+     otherwise floats above the toolbar dropdown menus (trapped in #toolbar's
+     z-index:40 stacking context) and eats their clicks. Cap it above the graph
+     (z-index:0) but below the toolbar. */
+  #cy .expand-collapse-canvas {
+    z-index: 6 !important;
+  }
 
-  /* ---- Legend ---- */
+  /* ---- Legend (bottom-right; left column is the tools panel) ---- */
   #legend {
     position: absolute;
-    left: 12px;
-    bottom: 12px;
+    right: 12px;
+    bottom: 46px;
     width: 250px;
-    max-height: calc(100% - 24px);
+    max-height: calc(100% - 58px);
     overflow: auto;
     background: rgba(23, 29, 39, 0.92);
     border: 1px solid var(--border);
@@ -360,6 +370,203 @@
   }
   .legend-hidden #legend {
     display: none;
+  }
+  #legendShow {
+    position: absolute;
+    right: 12px;
+    bottom: 46px;
+    display: none;
+    align-items: center;
+    gap: 6px;
+    background: rgba(23, 29, 39, 0.9);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 11.5px;
+    color: var(--text2);
+    z-index: 15;
+    backdrop-filter: blur(6px);
+  }
+  #legendShow:hover {
+    color: var(--text);
+    border-color: var(--border2);
+  }
+  #legendShow svg {
+    width: 14px;
+    height: 14px;
+  }
+  body.light #legendShow {
+    background: rgba(255, 255, 255, 0.92);
+  }
+  .legend-hidden #legendShow {
+    display: inline-flex;
+  }
+
+  /* ---- Left tools panel ---- */
+  #tools {
+    position: absolute;
+    left: 12px;
+    top: 12px;
+    width: 186px;
+    max-height: calc(100% - 24px);
+    overflow-y: auto;
+    background: rgba(23, 29, 39, 0.94);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px 10px;
+    backdrop-filter: blur(6px);
+    z-index: 16;
+  }
+  body.light #tools {
+    background: rgba(255, 255, 255, 0.95);
+  }
+  .tools-hidden #tools {
+    display: none;
+  }
+  .tools-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--text2);
+    margin-bottom: 6px;
+  }
+  #toolsClose {
+    cursor: pointer;
+    color: var(--text3);
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  #toolsClose:hover {
+    color: var(--text);
+  }
+  .tools-sec {
+    margin-top: 8px;
+  }
+  .tools-sec h5 {
+    margin: 0 0 5px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text3);
+  }
+  .tool-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+  }
+  .tool-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 7px 4px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    background: var(--bg);
+    color: var(--text2);
+    font-size: 10.5px;
+    text-align: center;
+  }
+  .tool-tile svg {
+    width: 22px;
+    height: 22px;
+    color: var(--accent);
+  }
+  .tool-tile:hover {
+    border-color: var(--accent);
+    color: var(--text);
+  }
+  .tool-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 6px 8px;
+    margin-top: 4px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 12px;
+    text-align: left;
+  }
+  .tool-row svg {
+    width: 17px;
+    height: 17px;
+    color: var(--accent);
+    flex: none;
+  }
+  .tool-row:hover {
+    border-color: var(--border2);
+    background: var(--bg3);
+  }
+  .tool-row.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  .tool-row.active svg {
+    color: #fff;
+  }
+  .tool-row:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+  #toolsShow {
+    position: absolute;
+    left: 12px;
+    top: 12px;
+    display: none;
+    align-items: center;
+    gap: 6px;
+    background: rgba(23, 29, 39, 0.9);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 11.5px;
+    color: var(--text2);
+    z-index: 16;
+    backdrop-filter: blur(6px);
+  }
+  #toolsShow svg {
+    width: 14px;
+    height: 14px;
+  }
+  #toolsShow:hover {
+    color: var(--text);
+    border-color: var(--border2);
+  }
+  body.light #toolsShow {
+    background: rgba(255, 255, 255, 0.92);
+  }
+  .tools-hidden #toolsShow {
+    display: inline-flex;
+  }
+
+  /* ---- Annotation resize handles (HTML overlay) ---- */
+  #annoHandles {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 20;
+    display: none;
+  }
+  #annoHandles.on {
+    display: block;
+  }
+  .anno-handle {
+    position: absolute;
+    width: 11px;
+    height: 11px;
+    margin: -6px 0 0 -6px;
+    background: var(--accent);
+    border: 1.5px solid #fff;
+    border-radius: 2px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    pointer-events: auto;
   }
 
   /* ---- Minimap-ish status bar ---- */
@@ -496,6 +703,51 @@
   .field.two > div {
     flex: 1;
   }
+  /* ---- Icon picker (generic + vendor + custom) ---- */
+  .icon-picker {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg);
+    padding: 6px;
+    max-height: 220px;
+    overflow-y: auto;
+  }
+  .icon-cat {
+    font-size: 9.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text3);
+    margin: 4px 2px 3px;
+  }
+  .icon-row {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 4px;
+  }
+  .icon-pick {
+    aspect-ratio: 1 / 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 3px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--bg2);
+  }
+  .icon-pick img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    pointer-events: none;
+  }
+  .icon-pick:hover {
+    border-color: var(--border2);
+  }
+  .icon-pick.on {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent) inset;
+    background: rgba(77, 159, 255, 0.12);
+  }
   .close-x {
     border: none;
     background: none;
@@ -552,7 +804,9 @@
   }
   .modal-body {
     padding: 16px 18px;
-    overflow: auto;
+    overflow-y: auto;
+    flex: 1 1 auto;
+    min-height: 0;
   }
   .modal-foot {
     padding: 12px 18px;
@@ -722,6 +976,82 @@
     font-weight: 600;
     box-shadow: var(--shadow);
   }
+  /* ---- Locations manager tree ---- */
+  .loc-tree {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .loc-tree ul {
+    list-style: none;
+    margin: 0;
+    padding-left: 18px;
+    border-left: 1px dashed var(--border);
+  }
+  .loc-node {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin: 4px 0;
+    background: var(--bg);
+  }
+  .loc-node:hover {
+    border-color: var(--border2);
+  }
+  .loc-node .loc-kind {
+    font-size: 9.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: var(--bg3);
+    color: var(--text2);
+    flex: none;
+  }
+  .loc-node .loc-name {
+    font-weight: 600;
+    color: var(--text);
+  }
+  .loc-node .loc-meta {
+    color: var(--text3);
+    font-size: 11px;
+  }
+  .loc-node .loc-actions {
+    margin-left: auto;
+    display: flex;
+    gap: 4px;
+  }
+  .loc-node .loc-actions button {
+    border: 1px solid var(--border);
+    background: var(--bg3);
+    color: var(--text2);
+    border-radius: 5px;
+    padding: 2px 7px;
+    font-size: 11px;
+  }
+  .loc-node .loc-actions button:hover {
+    color: var(--text);
+    border-color: var(--border2);
+  }
+  .loc-kind.site {
+    color: var(--accent);
+    background: rgba(77, 159, 255, 0.14);
+  }
+  .loc-kind.building {
+    color: var(--ok);
+    background: rgba(102, 187, 106, 0.14);
+  }
+  .loc-kind.floor {
+    color: var(--warn);
+    background: rgba(255, 183, 77, 0.16);
+  }
+  .loc-kind.cabinet {
+    color: #ce93d8;
+    background: rgba(171, 71, 188, 0.16);
+  }
   .toast {
     position: fixed;
     bottom: 20px;
@@ -746,9 +1076,120 @@
     padding: 1px 5px;
     font-size: 11px;
     font-family: ui-monospace, monospace;
+    white-space: nowrap;
+  }
+  /* ---- Keyboard shortcuts modal ---- */
+  .sc-group {
+    margin-bottom: 14px;
+  }
+  .sc-group h5 {
+    margin: 0 0 6px;
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text3);
+  }
+  .sc-row {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    padding: 4px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .sc-row:last-child {
+    border-bottom: none;
+  }
+  .sc-keys {
+    flex: 0 0 44%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+  }
+  .sc-desc {
+    color: var(--text2);
   }
   .file-hidden {
     display: none;
+  }
+  /* ---- Responsive: collapse toolbar into a hamburger drawer ----
+     `.compact` is toggled from JS at a mobile-width breakpoint. In compact
+     mode the full toolbar moves into the drawer, but a few quick actions
+     (#tbQuick) stay visible outside the burger. */
+  #btnMenu {
+    display: none;
+  }
+  #tbItems {
+    display: contents;
+  }
+  /* quick actions are duplicates shown only in compact mode */
+  #tbQuick {
+    display: none;
+  }
+  #toolbar.compact #tbQuick {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  #toolbar.compact {
+    overflow: visible;
+  }
+  #toolbar.compact #btnMenu {
+    display: inline-flex;
+    margin-left: auto;
+  }
+  #toolbar.compact #tbItems {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    padding: 8px;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    max-height: calc(100vh - var(--tb-h));
+    overflow-y: auto;
+    z-index: 45;
+  }
+  #toolbar.compact.nav-open #tbItems {
+    display: flex;
+  }
+  #toolbar.compact #tbItems .tb-sep {
+    width: auto;
+    height: 1px;
+    align-self: stretch;
+    margin: 4px 2px;
+  }
+  #toolbar.compact #tbItems .btn {
+    width: 100%;
+    height: 34px;
+    justify-content: flex-start;
+  }
+  #toolbar.compact #tbItems .dropdown,
+  #toolbar.compact #tbItems #searchWrap {
+    width: 100%;
+  }
+  #toolbar.compact #tbItems #search {
+    width: 100%;
+  }
+  @media (max-width: 640px) {
+    .brand .sub {
+      display: none;
+    }
+    #panel {
+      width: 100%;
+    }
+    #legend {
+      width: 190px;
+      max-height: 55%;
+    }
+    .modal {
+      max-height: 100%;
+    }
   }
   ::-webkit-scrollbar {
     width: 10px;
@@ -782,8 +1223,49 @@
     </svg>
     netviz <span class="sub">v1.0</span>
   </div>
-  <div class="tb-sep"></div>
-  <button class="btn" id="btnNew">
+  <!-- Always-visible quick actions (shown only when the toolbar is collapsed) -->
+  <div id="tbQuick">
+    <button class="btn icon" id="qSearch" title="Search">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <circle cx="11" cy="11" r="7" />
+        <path d="M21 21l-4-4" />
+      </svg>
+    </button>
+    <button class="btn icon" id="qAdd" title="Add node">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <rect x="4" y="7" width="10" height="10" rx="2" />
+        <path d="M18 10v6M15 13h6" />
+      </svg>
+    </button>
+    <button class="btn icon" id="qFit" title="Fit">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
+      </svg>
+    </button>
+  </div>
+  <button class="btn icon" id="btnMenu" title="Menu" aria-label="Toggle menu">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M4 7h16M4 12h16M4 17h16" />
+    </svg>
+  </button>
+  <div id="tbItems">
+    <div class="tb-sep"></div>
+    <button class="btn" id="btnNew">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <path d="M12 5v14M5 12h14" /></svg
     >New
@@ -844,52 +1326,10 @@
     </div>
   </div>
   <div class="tb-sep"></div>
-  <button class="btn" id="btnAddNode">
+  <button class="btn icon" id="btnTools" title="Toggle tools panel">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <rect x="4" y="7" width="10" height="10" rx="2" />
-      <path d="M18 10v6M15 13h6" /></svg
-    >Add Node
-  </button>
-  <button class="btn" id="btnDrawLink">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <circle cx="6" cy="6" r="2.5" />
-      <circle cx="18" cy="18" r="2.5" />
-      <path d="M8 8l8 8" /></svg
-    >Draw Link
-  </button>
-  <div class="dropdown">
-    <button class="btn" id="btnLayout">
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-      >
-        <circle cx="6" cy="6" r="2" />
-        <circle cx="18" cy="6" r="2" />
-        <circle cx="12" cy="18" r="2" />
-        <path d="M6 8v2a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8M12 14v2" /></svg
-      >Layout ▾
-    </button>
-    <div class="menu" id="layoutMenu">
-      <div class="mi" data-layout="fcose">Force-directed (fCoSE)</div>
-      <div class="mi" data-layout="hierarchy">Hierarchical (by layer)</div>
-      <div class="mi" data-layout="circle-site">Circular per site</div>
-      <div class="mi" data-layout="grid">Grid</div>
-      <div class="msep"></div>
-      <div class="mi" data-layout="manual">Keep manual positions</div>
-    </div>
-  </div>
-  <button class="btn" id="btnGroup">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <rect x="3" y="4" width="18" height="16" rx="2" />
-      <path d="M3 9h18" /></svg
-    >Group by Site
-  </button>
-  <button class="btn" id="btnFit">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg
-    >Fit
+      <path d="M14.7 6.3a4 4 0 0 0-5.4 5.4l-6 6 2 2 6-6a4 4 0 0 0 5.4-5.4l-2.3 2.3-2-2z" />
+    </svg>
   </button>
   <div class="tb-sep"></div>
   <div id="searchWrap">
@@ -975,11 +1415,165 @@
       />
     </svg>
   </button>
+  <button class="btn icon" id="btnShortcuts" title="Keyboard shortcuts (?)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.8.4-1 1-1 1.7" />
+      <circle cx="12" cy="17" r="0.6" fill="currentColor" stroke="none" />
+    </svg>
+  </button>
+  </div>
 </div>
 
 <div id="main">
   <div id="cyWrap">
     <div id="cy"></div>
+    <div id="tools">
+      <div class="tools-head">
+        Tools <span id="toolsClose" title="Hide tools">hide ✕</span>
+      </div>
+      <div class="tools-sec">
+        <h5>Add</h5>
+        <div class="tool-grid">
+          <button class="tool-tile" data-add="node" title="Add node">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <rect x="4" y="7" width="16" height="10" rx="2" />
+              <circle cx="8" cy="12" r="1.2" fill="currentColor" stroke="none" />
+              <path d="M12 10v4M14 12h-4" />
+            </svg><span>Node</span>
+          </button>
+          <button class="tool-tile" data-add="site" title="Add site">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M12 21s7-6.3 7-11a7 7 0 1 0-14 0c0 4.7 7 11 7 11z" />
+              <circle cx="12" cy="10" r="2.3" />
+            </svg><span>Site</span>
+          </button>
+          <button class="tool-tile" data-add="building" title="Add building">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <rect x="5" y="3" width="14" height="18" rx="1" />
+              <path d="M9 7h2M13 7h2M9 11h2M13 11h2M10 21v-4h4v4" />
+            </svg><span>Building</span>
+          </button>
+          <button class="tool-tile" data-add="floor" title="Add floor">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M12 3l9 5-9 5-9-5 9-5z" />
+              <path d="M3 13l9 5 9-5" />
+            </svg><span>Floor</span>
+          </button>
+          <button class="tool-tile" data-add="cabinet" title="Add cabinet">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <rect x="6" y="3" width="12" height="18" rx="1" />
+              <path d="M9 6h6M9 10h6M9 14h6M9 18h6" />
+            </svg><span>Cabinet</span>
+          </button>
+          <button class="tool-tile" data-add="rectangle" title="Add rectangle">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <rect x="4" y="6" width="16" height="12" rx="1.5" />
+            </svg><span>Rectangle</span>
+          </button>
+          <button class="tool-tile" data-add="circle" title="Add circle">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <circle cx="12" cy="12" r="7.5" />
+            </svg><span>Circle</span>
+          </button>
+          <button class="tool-tile" data-add="text" title="Add text">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M5 6h14M5 6v-1M19 6v-1M12 6v13M9 19h6" />
+            </svg><span>Text</span>
+          </button>
+        </div>
+        <button class="tool-row" data-add="manage">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M4 6h16M4 12h16M4 18h10" />
+          </svg><span>Manage locations…</span>
+        </button>
+      </div>
+      <div class="tools-sec">
+        <h5>Edit</h5>
+        <button class="tool-row" id="toolDraw">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="6" cy="6" r="2.5" />
+            <circle cx="18" cy="18" r="2.5" />
+            <path d="M8 8l8 8" />
+          </svg><span>Draw Link</span>
+        </button>
+      </div>
+      <div class="tools-sec">
+        <h5>View</h5>
+        <button class="tool-row" data-view="logical">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="6" cy="6" r="2" />
+            <circle cx="18" cy="6" r="2" />
+            <circle cx="12" cy="18" r="2" />
+            <path d="M7 7l4 9M17 7l-4 9" />
+          </svg><span>Logical</span>
+        </button>
+        <button class="tool-row" data-view="physical">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <rect x="5" y="3" width="14" height="18" rx="1" />
+            <path d="M9 7h2M13 7h2M9 11h2M13 11h2M10 21v-4h4v4" />
+          </svg><span>Physical</span>
+        </button>
+      </div>
+      <div class="tools-sec">
+        <h5>Layout</h5>
+        <button class="tool-row" data-layout="fcose">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="12" cy="5" r="2" />
+            <circle cx="5" cy="18" r="2" />
+            <circle cx="19" cy="18" r="2" />
+            <path d="M12 7l-6 9M12 7l6 9M6.5 18h11" />
+          </svg><span>Force-directed</span>
+        </button>
+        <button class="tool-row" data-layout="hierarchy">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <rect x="9" y="3" width="6" height="4" />
+            <rect x="3" y="16" width="6" height="4" />
+            <rect x="15" y="16" width="6" height="4" />
+            <path d="M12 7v5M6 16v-2h12v2" />
+          </svg><span>Hierarchical</span>
+        </button>
+        <button class="tool-row" data-layout="circle-site">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="12" cy="12" r="8" />
+            <circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none" />
+          </svg><span>Circular / site</span>
+        </button>
+        <button class="tool-row" data-layout="grid">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <rect x="4" y="4" width="6" height="6" />
+            <rect x="14" y="4" width="6" height="6" />
+            <rect x="4" y="14" width="6" height="6" />
+            <rect x="14" y="14" width="6" height="6" />
+          </svg><span>Grid</span>
+        </button>
+        <button class="tool-row" data-layout="manual">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M6 3l13 7-5.5 1.5L12 17 6 3z" />
+          </svg><span>Manual</span>
+        </button>
+      </div>
+      <div class="tools-sec">
+        <h5>Arrange</h5>
+        <button class="tool-row" id="toolGroup">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <rect x="3" y="4" width="18" height="16" rx="2" />
+            <path d="M3 9h18" />
+          </svg><span>Group by Site</span>
+        </button>
+        <button class="tool-row" id="toolFit">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
+          </svg><span>Fit</span>
+        </button>
+      </div>
+    </div>
+    <button id="toolsShow" title="Show tools">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M14.7 6.3a4 4 0 0 0-5.4 5.4l-6 6 2 2 6-6a4 4 0 0 0 5.4-5.4l-2.3 2.3-2-2z" />
+      </svg>
+      Tools
+    </button>
     <div id="drawHint">
       Draw-Link mode: click a source node, then a target node. Press Esc to
       cancel.
@@ -1009,6 +1603,19 @@
       <button class="btn danger" id="bulkDelete">Delete</button>
     </div>
     <div id="legend"></div>
+    <button id="legendShow" title="Show legend">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+      >
+        <rect x="3" y="4" width="18" height="16" rx="2" />
+        <path d="M7 9h4M7 13h4M15 9h2M15 13h2" />
+      </svg>
+      Legend
+    </button>
+    <div id="annoHandles"></div>
     <div id="statusbar">—</div>
   </div>
   <div id="panel"></div>
@@ -1059,6 +1666,22 @@
   </div>
 </div>
 
+<!-- Locations manager -->
+<div class="overlay" id="locationsOverlay">
+  <div class="modal wide">
+    <div class="modal-head">
+      <h3>Locations</h3>
+      <button class="close-x" data-close="locationsOverlay">×</button>
+    </div>
+    <div class="modal-body" id="locationsBody"></div>
+    <div class="modal-foot">
+      <button class="btn" id="locImport">Import CSV…</button>
+      <button class="btn" id="locAddSite">+ Site</button>
+      <button class="btn primary" data-close="locationsOverlay">Done</button>
+    </div>
+  </div>
+</div>
+
 <!-- Settings -->
 <div class="overlay" id="settingsOverlay">
   <div class="modal wide">
@@ -1069,6 +1692,20 @@
     <div class="modal-body" id="settingsBody"></div>
     <div class="modal-foot">
       <button class="btn" data-close="settingsOverlay">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Keyboard shortcuts -->
+<div class="overlay" id="shortcutsOverlay">
+  <div class="modal">
+    <div class="modal-head">
+      <h3>Keyboard shortcuts</h3>
+      <button class="close-x" data-close="shortcutsOverlay">×</button>
+    </div>
+    <div class="modal-body" id="shortcutsBody"></div>
+    <div class="modal-foot">
+      <button class="btn primary" data-close="shortcutsOverlay">Close</button>
     </div>
   </div>
 </div>
@@ -1103,6 +1740,9 @@
       "camera",
       "printer",
       "workstation",
+      "ip-phone",
+      "sensor",
+      "tv",
       "cloud",
       "internet",
       "isp",
@@ -1141,6 +1781,84 @@
     ];
     const STP_STATES = ["forwarding", "blocked", "n/a"];
     const STATUSES = ["up", "down", "planned", "decommissioned"];
+
+    /* ---------- Locations (physical hierarchy) ---------- */
+    const LOCATION_KINDS = ["site", "building", "floor", "cabinet"];
+    // parent kind required by each location kind (null = top level)
+    const LOC_PARENT_KIND = {
+      site: null,
+      building: "site",
+      floor: "building",
+      cabinet: "floor",
+    };
+    const LOC_KIND_LABEL = {
+      site: "Site",
+      building: "Building",
+      floor: "Floor",
+      cabinet: "Cabinet",
+    };
+    // fields shown in the detail panel per location kind (besides name + parent)
+    const LOC_FIELDS = {
+      site: [
+        ["code", "Code"],
+        ["address", "Address"],
+        ["city", "City"],
+        ["region", "Region / State"],
+        ["country", "Country"],
+        ["latitude", "Latitude"],
+        ["longitude", "Longitude"],
+        ["contact", "Contact"],
+        ["notes", "Notes", "textarea"],
+      ],
+      building: [
+        ["code", "Code"],
+        ["address", "Address"],
+        ["floors_count", "Floors"],
+        ["notes", "Notes", "textarea"],
+      ],
+      floor: [
+        ["level", "Level / Number"],
+        ["elevation", "Elevation"],
+        ["notes", "Notes", "textarea"],
+      ],
+      cabinet: [
+        ["code", "Rack / Cabinet ID"],
+        ["row", "Row"],
+        ["position", "Position"],
+        ["ru", "Height (RU)"],
+        ["power", "Power"],
+        ["notes", "Notes", "textarea"],
+      ],
+    };
+    // every persisted location property (used for import mapping + normalization)
+    const LOCATION_FIELDS = [
+      "kind",
+      "name",
+      "parent",
+      "code",
+      "address",
+      "city",
+      "region",
+      "country",
+      "latitude",
+      "longitude",
+      "contact",
+      "floors_count",
+      "level",
+      "elevation",
+      "row",
+      "position",
+      "ru",
+      "power",
+      "notes",
+      "id",
+    ];
+
+    /* ---------- Annotations (shapes + text) ---------- */
+    const ANNO_SHAPES = ["rectangle", "round-rectangle", "ellipse"];
+    // z-index bands: background shapes < edges(5) < devices(10) < foreground
+    const Z_EDGE = 5;
+    const Z_NODE = 10;
 
     const MEDIA_STYLE = {
       copper: { color: "#9aa0a6", style: "solid" },
@@ -1183,6 +1901,9 @@
       camera: "#78909c",
       printer: "#78909c",
       workstation: "#90a4ae",
+      "ip-phone": "#4db6ac",
+      sensor: "#ffca28",
+      tv: "#7e57c2",
       cloud: "#b0bec5",
       internet: "#4dd0e1",
       isp: "#4dd0e1",
@@ -1225,6 +1946,12 @@
         `<path d='M14 20V9h20v11'/><rect x='8' y='20' width='32' height='13' rx='2'/><rect x='15' y='27' width='18' height='11'/><circle cx='34' cy='25' r='1.5' fill='${a}' stroke='none'/>`,
       workstation: (a) =>
         `<rect x='7' y='9' width='34' height='21' rx='2'/><path d='M20 30v6M28 30v6M15 40h18'/><path stroke='${a}' d='M13 16h13'/>`,
+      "ip-phone": (a) =>
+        `<rect x='10' y='17' width='28' height='22' rx='2'/><rect x='14' y='21' width='11' height='8' rx='1' stroke='${a}'/><path d='M12 10c3 5 21 5 24 0' /><circle cx='30' cy='23' r='1.3' fill='${a}' stroke='none'/><circle cx='34' cy='23' r='1.3' fill='${a}' stroke='none'/><circle cx='30' cy='27' r='1.3' fill='${a}' stroke='none'/><circle cx='34' cy='27' r='1.3' fill='${a}' stroke='none'/>`,
+      sensor: (a) =>
+        `<rect x='12' y='12' width='24' height='24' rx='6'/><circle cx='24' cy='24' r='3' fill='${a}' stroke='none'/><path stroke='${a}' d='M30 18a8 8 0 0 1 0 12M18 18a8 8 0 0 0 0 12'/>`,
+      tv: (a) =>
+        `<rect x='7' y='11' width='34' height='22' rx='2'/><path d='M18 33l-1 5h14l-1-5M15 38h18'/><circle cx='24' cy='14' r='1.3' fill='${a}' stroke='none'/>`,
       cloud: (a) =>
         `<path d='M16 34a8 8 0 0 1 0-16 10 10 0 0 1 19 3 6.5 6.5 0 0 1-1 13z'/><path stroke='${a}' d='M18 27h12'/>`,
       internet: (a) =>
@@ -1238,6 +1965,267 @@
     NODE_TYPES.forEach((t) => {
       ICONS[t] = mkIcon(GLYPH[t](TYPE_ACCENT[t]));
     });
+
+    /* ---------- Device icon set (vendor-style topology glyphs) ---------- */
+    function dataUri(svg) {
+      return "data:image/svg+xml;base64," + btoa(svg);
+    }
+    const _svgHead =
+      "<svg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'>";
+    const VENDORS = [
+      {
+        key: "cisco-router",
+        label: "Cisco Router",
+        svg:
+          "<circle cx='24' cy='24' r='15' fill='#1ba0d7'/>" +
+          "<g stroke='#fff' stroke-width='2.3' fill='none' stroke-linecap='round' stroke-linejoin='round'>" +
+          "<path d='M24 16v7M21 19l3-3 3 3'/><path d='M24 32v-7M21 29l3 3 3-3'/>" +
+          "<path d='M16 24h7M19 21l-3 3 3 3'/><path d='M32 24h-7M29 21l3 3-3 3'/></g>",
+      },
+      {
+        key: "cisco-switch",
+        label: "Cisco Switch",
+        svg:
+          "<rect x='6' y='14' width='36' height='20' rx='2.5' fill='#2e7d32'/>" +
+          "<g stroke='#fff' stroke-width='1.9' fill='none' stroke-linecap='round' stroke-linejoin='round'>" +
+          "<path d='M13 22h13'/><path d='M23.5 19.5l2.6 2.5-2.6 2.5'/>" +
+          "<path d='M35 29h-13'/><path d='M24.5 26.5l-2.6 2.5 2.6 2.5'/></g>",
+      },
+      {
+        key: "cisco-l3",
+        label: "Cisco L3 Switch",
+        svg:
+          "<rect x='6' y='13' width='36' height='22' rx='2.5' fill='#00838f'/>" +
+          "<text x='24' y='23' font-family='Arial,sans-serif' font-size='9' font-weight='bold' fill='#fff' text-anchor='middle'>L3</text>" +
+          "<g stroke='#fff' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round'>" +
+          "<path d='M12 30h9'/><path d='M18.5 27.5l2.5 2.5-2.5 2.5'/>" +
+          "<path d='M36 30h-9'/><path d='M29.5 27.5l-2.5 2.5 2.5 2.5'/></g>",
+      },
+      {
+        key: "cisco-fw",
+        label: "Cisco Firewall",
+        svg:
+          "<rect x='7' y='12' width='34' height='24' rx='2' fill='#e8833a'/>" +
+          "<g stroke='#a85416' stroke-width='1.5' stroke-linecap='round'>" +
+          "<path d='M7 20h34M7 28h34'/><path d='M18 12v8M30 12v8'/>" +
+          "<path d='M13 20v8M25 20v8M37 20v8'/><path d='M18 28v8M30 28v8'/></g>",
+      },
+      {
+        key: "fortigate",
+        label: "FortiGate Firewall",
+        svg:
+          "<rect x='6' y='14' width='36' height='20' rx='3' fill='#da291c'/>" +
+          "<path d='M24 17l7 2.4v4.6c0 4-3.5 6.6-7 8-3.5-1.4-7-4-7-8v-4.6z' fill='#fff'/>" +
+          "<path d='M24 20l3.8 1.3v2.9c0 2.3-1.9 3.8-3.8 4.6-1.9-.8-3.8-2.3-3.8-4.6v-2.9z' fill='#da291c'/>",
+      },
+      {
+        key: "internet",
+        label: "Internet",
+        svg:
+          "<path d='M15 33a8 8 0 0 1 0-16 10 10 0 0 1 19 2.5 6.5 6.5 0 0 1-1 13z' fill='#4dd0e1'/>" +
+          "<g stroke='#fff' stroke-width='1.4' fill='none'>" +
+          "<circle cx='24' cy='25' r='6'/><path d='M18 25h12M24 19v12M20.5 21c2 2 5 2 7 0M20.5 29c2-2 5-2 7 0'/></g>",
+      },
+      {
+        key: "mpls",
+        label: "MPLS Cloud",
+        svg:
+          "<path d='M15 34a8 8 0 0 1 0-16 10 10 0 0 1 19 2.5 6.5 6.5 0 0 1-1 13z' fill='#7e57c2'/>" +
+          "<g stroke='#fff' stroke-width='1.3'><path d='M18 27l11-3M18 27l9 4M29 24l-2 7'/></g>" +
+          "<g fill='#fff'><circle cx='18' cy='27' r='2'/><circle cx='29' cy='24' r='2'/><circle cx='27' cy='31' r='2'/></g>",
+      },
+      {
+        key: "win-pc",
+        label: "Windows PC",
+        svg:
+          "<rect x='6' y='9' width='36' height='23' rx='2' fill='#2b3a52'/>" +
+          "<path d='M19 32l-1 5h12l-1-5M15 38h18' stroke='#2b3a52' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/>" +
+          "<g fill='#00a4ef'><rect x='14' y='14' width='8' height='6'/><rect x='24' y='14' width='8' height='6'/>" +
+          "<rect x='14' y='22' width='8' height='4'/><rect x='24' y='22' width='8' height='4'/></g>",
+      },
+      {
+        key: "win-server",
+        label: "Windows Server",
+        svg:
+          "<rect x='12' y='7' width='24' height='34' rx='2' fill='#2b3a52'/>" +
+          "<g fill='#00a4ef'><rect x='17' y='12' width='6' height='5'/><rect x='25' y='12' width='6' height='5'/>" +
+          "<rect x='17' y='19' width='6' height='4'/><rect x='25' y='19' width='6' height='4'/></g>" +
+          "<g stroke='#6b7d99' stroke-width='1.6' stroke-linecap='round'><path d='M17 28h14M17 32h14M17 36h14'/></g>",
+      },
+      {
+        key: "esxi",
+        label: "VMware ESXi",
+        svg:
+          "<rect x='7' y='10' width='34' height='28' rx='2' fill='#37474f'/>" +
+          "<g fill='#78be20'><rect x='12' y='15' width='9' height='7' rx='1'/><rect x='27' y='15' width='9' height='7' rx='1'/></g>" +
+          "<g fill='#90a4ae'><rect x='12' y='26' width='9' height='7' rx='1'/><rect x='27' y='26' width='9' height='7' rx='1'/></g>",
+      },
+      {
+        key: "dell-server",
+        label: "Dell Server",
+        svg:
+          "<rect x='7' y='12' width='34' height='24' rx='2' fill='#1b2733'/>" +
+          "<rect x='8' y='13' width='32' height='22' rx='1.5' fill='none' stroke='#0085c3' stroke-width='1.6'/>" +
+          "<g fill='#0085c3'><circle cx='13' cy='19' r='1.5'/><circle cx='18' cy='19' r='1.5'/></g>" +
+          "<g stroke='#7f95a8' stroke-width='1.5' stroke-linecap='round'><path d='M24 19h12M24 24h12M24 29h12'/></g>" +
+          "<path d='M12 29h6' stroke='#0085c3' stroke-width='2' stroke-linecap='round'/>",
+      },
+      {
+        key: "hp-server",
+        label: "HP Server",
+        svg:
+          "<rect x='7' y='12' width='34' height='24' rx='2' fill='#1b2733'/>" +
+          "<rect x='8' y='13' width='32' height='22' rx='1.5' fill='none' stroke='#00b388' stroke-width='1.6'/>" +
+          "<g fill='#00b388'><rect x='12' y='17' width='3' height='14' rx='1'/><rect x='17' y='17' width='3' height='14' rx='1'/><rect x='22' y='17' width='3' height='14' rx='1'/></g>" +
+          "<g stroke='#7f95a8' stroke-width='1.4' stroke-linecap='round'><path d='M29 19h8M29 24h8M29 29h8'/></g>",
+      },
+      {
+        key: "fortiswitch",
+        label: "FortiSwitch",
+        svg:
+          "<rect x='6' y='14' width='36' height='20' rx='2.5' fill='#da291c'/>" +
+          "<g stroke='#fff' stroke-width='1.9' fill='none' stroke-linecap='round' stroke-linejoin='round'>" +
+          "<path d='M13 22h13'/><path d='M23.5 19.5l2.6 2.5-2.6 2.5'/>" +
+          "<path d='M35 29h-13'/><path d='M24.5 26.5l-2.6 2.5 2.6 2.5'/></g>",
+      },
+      {
+        key: "fortiap",
+        label: "FortiAP",
+        svg:
+          "<g stroke='#da291c' stroke-width='2.3' fill='none' stroke-linecap='round'>" +
+          "<path d='M13 21a15 15 0 0 1 22 0'/><path d='M17.5 25.5a9 9 0 0 1 13 0'/></g>" +
+          "<rect x='15' y='29' width='18' height='9' rx='3' fill='#da291c'/>" +
+          "<circle cx='24' cy='33.5' r='1.6' fill='#fff'/>",
+      },
+      {
+        key: "omada-controller",
+        label: "Omada Controller",
+        svg:
+          "<rect x='7' y='11' width='34' height='26' rx='3' fill='#007a80'/>" +
+          "<g stroke='#fff' stroke-width='1.4'><path d='M24 24l-9-7M24 24l9-7M24 24l-9 7M24 24l9 7'/></g>" +
+          "<g fill='#fff'><circle cx='24' cy='24' r='3.2'/><circle cx='15' cy='17' r='2'/><circle cx='33' cy='17' r='2'/><circle cx='15' cy='31' r='2'/><circle cx='33' cy='31' r='2'/></g>",
+      },
+      {
+        key: "tplink-ap",
+        label: "TP-Link AP",
+        svg:
+          "<g stroke='#00a2a8' stroke-width='2.3' fill='none' stroke-linecap='round'>" +
+          "<path d='M13 21a15 15 0 0 1 22 0'/><path d='M17.5 25.5a9 9 0 0 1 13 0'/></g>" +
+          "<rect x='15' y='29' width='18' height='9' rx='3' fill='#00a2a8'/>" +
+          "<circle cx='24' cy='33.5' r='1.6' fill='#fff'/>",
+      },
+      {
+        key: "tplink-switch",
+        label: "TP-Link Switch",
+        svg:
+          "<rect x='6' y='14' width='36' height='20' rx='2.5' fill='#00a2a8'/>" +
+          "<g stroke='#fff' stroke-width='1.9' fill='none' stroke-linecap='round' stroke-linejoin='round'>" +
+          "<path d='M13 22h13'/><path d='M23.5 19.5l2.6 2.5-2.6 2.5'/>" +
+          "<path d='M35 29h-13'/><path d='M24.5 26.5l-2.6 2.5 2.6 2.5'/></g>",
+      },
+      {
+        key: "hikvision-switch",
+        label: "Hikvision Switch",
+        svg:
+          "<rect x='5' y='16' width='38' height='16' rx='2' fill='#e60012'/>" +
+          "<g fill='#fff'><circle cx='10' cy='20' r='1'/><circle cx='14' cy='20' r='1'/></g>" +
+          "<g fill='#fff'><rect x='9' y='25' width='3.2' height='4' rx='.6'/><rect x='14' y='25' width='3.2' height='4' rx='.6'/><rect x='19' y='25' width='3.2' height='4' rx='.6'/><rect x='24' y='25' width='3.2' height='4' rx='.6'/><rect x='29' y='25' width='3.2' height='4' rx='.6'/><rect x='34' y='25' width='3.2' height='4' rx='.6'/></g>",
+      },
+      {
+        key: "hikvision-camera",
+        label: "Hikvision Camera",
+        svg:
+          "<rect x='9' y='16' width='24' height='13' rx='6.5' fill='#556069'/>" +
+          "<circle cx='30' cy='22.5' r='4.5' fill='#2b333a'/><circle cx='30' cy='22.5' r='2.2' fill='#8ecbf0'/>" +
+          "<path d='M18 29v4M13 34h9' stroke='#556069' stroke-width='2.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/>" +
+          "<circle cx='14' cy='20' r='1.4' fill='#e60012'/>",
+      },
+      {
+        key: "wlc",
+        label: "Wireless Controller (WLC)",
+        svg:
+          "<rect x='7' y='13' width='34' height='22' rx='2.5' fill='#1565c0'/>" +
+          "<path d='M12 18h9' stroke='#fff' stroke-width='1.8' stroke-linecap='round'/>" +
+          "<g stroke='#fff' stroke-width='1.9' fill='none' stroke-linecap='round'><path d='M16 29a8 8 0 0 1 16 0'/><path d='M19.5 30.5a4.5 4.5 0 0 1 9 0'/></g>" +
+          "<circle cx='24' cy='30.5' r='1.5' fill='#fff'/>",
+      },
+      {
+        key: "ip-phone",
+        label: "IP Telephone",
+        svg:
+          "<rect x='9' y='17' width='30' height='21' rx='2.5' fill='#37474f'/>" +
+          "<rect x='13' y='21' width='11' height='8' rx='1' fill='#8ecbf0'/>" +
+          "<g fill='#b0bec5'><circle cx='29' cy='22' r='1.2'/><circle cx='33' cy='22' r='1.2'/><circle cx='29' cy='26' r='1.2'/><circle cx='33' cy='26' r='1.2'/></g>" +
+          "<path d='M13 10c3 5 19 5 22 0' stroke='#37474f' stroke-width='3' fill='none' stroke-linecap='round'/>",
+      },
+      {
+        key: "printer",
+        label: "Printer",
+        svg:
+          "<path d='M14 19V10h20v9' fill='none' stroke='#546e7a' stroke-width='2'/>" +
+          "<rect x='8' y='19' width='32' height='13' rx='2' fill='#546e7a'/>" +
+          "<rect x='15' y='27' width='18' height='11' fill='#eceff1' stroke='#546e7a' stroke-width='1.5'/>" +
+          "<circle cx='34' cy='24' r='1.5' fill='#4caf50'/>",
+      },
+      {
+        key: "sensor",
+        label: "Sensor",
+        svg:
+          "<rect x='12' y='12' width='24' height='24' rx='6' fill='#ff8f00'/>" +
+          "<circle cx='24' cy='24' r='3.2' fill='#fff'/>" +
+          "<g stroke='#fff' stroke-width='2' fill='none' stroke-linecap='round'><path d='M30 18a8 8 0 0 1 0 12'/><path d='M18 18a8 8 0 0 0 0 12'/></g>",
+      },
+      {
+        key: "internal-camera",
+        label: "Internal Camera",
+        svg:
+          "<path d='M10 19a14 14 0 0 1 28 0z' fill='#546e7a'/>" +
+          "<rect x='8' y='19' width='32' height='3.5' rx='1.5' fill='#37474f'/>" +
+          "<circle cx='24' cy='16' r='4.2' fill='#263238'/><circle cx='24' cy='16' r='2.1' fill='#8ecbf0'/>" +
+          "<circle cx='33' cy='15' r='1.3' fill='#e53935'/>",
+      },
+      {
+        key: "yealink-tv",
+        label: "Yealink TV",
+        svg:
+          "<rect x='6' y='11' width='36' height='23' rx='2' fill='#263238'/>" +
+          "<rect x='9' y='15' width='30' height='14' rx='1' fill='#455a64'/>" +
+          "<rect x='18' y='9' width='12' height='3' rx='1.5' fill='#ea5504'/><circle cx='24' cy='10.5' r='0.9' fill='#fff'/>" +
+          "<path d='M18 34l-1 4h14l-1-4M15 38h18' stroke='#263238' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/>",
+      },
+    ];
+    const VENDOR_ICONS = {};
+    VENDORS.forEach((v) => {
+      VENDOR_ICONS[v.key] = dataUri(_svgHead + v.svg + "</svg>");
+    });
+    // Selecting a device icon also switches the node's type to the matching one.
+    const DEVICE_TYPE = {
+      "cisco-router": "router",
+      "cisco-switch": "l2-switch",
+      "cisco-l3": "l3-switch",
+      "cisco-fw": "firewall",
+      fortigate: "firewall",
+      internet: "internet",
+      mpls: "cloud",
+      "win-pc": "workstation",
+      "win-server": "server",
+      esxi: "hypervisor",
+      "dell-server": "server",
+      "hp-server": "server",
+      fortiswitch: "l2-switch",
+      fortiap: "access-point",
+      "omada-controller": "wlc",
+      "tplink-ap": "access-point",
+      "tplink-switch": "l2-switch",
+      "hikvision-switch": "l2-switch",
+      "hikvision-camera": "camera",
+      wlc: "wlc",
+      "ip-phone": "ip-phone",
+      printer: "printer",
+      sensor: "sensor",
+      "internal-camera": "camera",
+      "yealink-tv": "tv",
+    };
     // Warm the browser image cache so Cytoscape rasterizes icons on first paint (avoids a blank-node flash / empty exports).
     const _iconCache = [];
     function preloadIcons(uris) {
@@ -1316,11 +2304,13 @@
       ui: {
         theme: "dark",
         layout: "fcose",
+        view: "logical",
         overlay: "combined",
         vlanColoring: false,
         showDecom: false,
         grouped: false,
         legendVisible: true,
+        toolsVisible: true,
         search: "",
         selectedId: null,
         selectedGroup: null,
@@ -1361,6 +2351,8 @@
         nodes: [],
         links: [],
         groups: [],
+        locations: [],
+        annotations: [],
       };
     }
 
@@ -1393,6 +2385,8 @@
       n.model = (raw.model || "").trim();
       n.icon = (raw.icon || "").trim();
       n.notes = (raw.notes || "").trim();
+      // physical placement: id of the cabinet (or floor) this node lives in
+      n.location = (raw.location || "").trim();
       n.x = raw.x === 0 || raw.x ? Number(raw.x) : null;
       n.y = raw.y === 0 || raw.y ? Number(raw.y) : null;
       if (isNaN(n.x)) n.x = null;
@@ -1463,6 +2457,111 @@
       return l;
     }
 
+    function normLocation(raw, warnings) {
+      const l = {},
+        w = [];
+      l.kind = coerceEnum(raw.kind, LOCATION_KINDS, null);
+      if (l.kind === null) {
+        if (raw.kind)
+          w.push(
+            `Location "${raw.name || ""}": unknown kind "${raw.kind}" → coerced to site`,
+          );
+        l.kind = "site";
+      }
+      l.name = String(raw.name || raw.id || "").trim();
+      // generated ids are always unique (same name can repeat under different
+      // parents, e.g. "Rack A" on two floors); explicit ids are honored.
+      l.id = raw.id ? slug(raw.id) : uid("loc");
+      if (!l.name) l.name = l.id;
+      // parent is kept as a raw reference here (id or name); resolved elsewhere
+      l.parent = String(raw.parent || "").trim();
+      // copy every optional field verbatim (all strings)
+      LOCATION_FIELDS.forEach((f) => {
+        if (["kind", "name", "id", "parent"].includes(f)) return;
+        l[f] = raw[f] == null ? "" : String(raw[f]).trim();
+      });
+      l.x = raw.x === 0 || raw.x ? Number(raw.x) : null;
+      l.y = raw.y === 0 || raw.y ? Number(raw.y) : null;
+      if (isNaN(l.x)) l.x = null;
+      if (isNaN(l.y)) l.y = null;
+      if (w.length && warnings)
+        w.forEach((m) => warnings.push({ sev: "warn", msg: m }));
+      return l;
+    }
+
+    /* ---------- Location hierarchy helpers ---------- */
+    function locList() {
+      return (AppState.project && AppState.project.locations) || [];
+    }
+    function locById(id) {
+      if (!id) return null;
+      return locList().find((l) => l.id === id) || null;
+    }
+    function locChildren(id) {
+      return locList().filter((l) => l.parent === id);
+    }
+    // Walk up the parent chain; returns {site,building,floor,cabinet} location objects.
+    function locChain(id) {
+      const chain = { site: null, building: null, floor: null, cabinet: null };
+      let cur = locById(id),
+        guard = 0;
+      while (cur && guard++ < 12) {
+        if (LOCATION_KINDS.includes(cur.kind)) chain[cur.kind] = cur;
+        cur = locById(cur.parent);
+      }
+      return chain;
+    }
+    function locPathLabel(id) {
+      const c = locChain(id);
+      return LOCATION_KINDS.map((k) => (c[k] ? c[k].name : null))
+        .filter(Boolean)
+        .join(" › ");
+    }
+    // The site name a node belongs to, derived from its physical location.
+    function nodeSiteFromLocation(node) {
+      if (!node.location) return "";
+      const c = locChain(node.location);
+      return c.site ? c.site.name : "";
+    }
+
+    /* ---------- Annotations (shapes + text) ---------- */
+    function annoList() {
+      return (AppState.project && AppState.project.annotations) || [];
+    }
+    function normAnnotation(raw) {
+      const a = {};
+      a.id = raw.id ? String(raw.id) : uid("a");
+      a.kind = raw.kind === "text" ? "text" : "shape";
+      a.shape = coerceEnum(raw.shape, ANNO_SHAPES, null) || "rectangle";
+      a.text = raw.text == null ? "" : String(raw.text);
+      const num = (v, d) => (v === 0 || v ? Number(v) : d);
+      a.x = num(raw.x, 0);
+      a.y = num(raw.y, 0);
+      if (isNaN(a.x)) a.x = 0;
+      if (isNaN(a.y)) a.y = 0;
+      a.w = num(raw.w, a.kind === "text" ? 160 : 160);
+      a.h = num(raw.h, a.kind === "text" ? 40 : 100);
+      a.bg = raw.bg || (a.kind === "text" ? "#000000" : "#4d9fff");
+      a.bgOpacity =
+        raw.bgOpacity == null
+          ? a.kind === "text"
+            ? 0
+            : 0.15
+          : Number(raw.bgOpacity);
+      if (isNaN(a.bgOpacity)) a.bgOpacity = 0.15;
+      a.border = raw.border || "#4d9fff";
+      a.borderWidth = num(raw.borderWidth, a.kind === "text" ? 0 : 2);
+      a.z = num(raw.z, a.kind === "text" ? Z_NODE + 5 : 0);
+      a.fontSize = num(raw.fontSize, a.kind === "text" ? 16 : 13);
+      a.fontColor = raw.fontColor || (a.kind === "text" ? "#e6e9ef" : "#e6e9ef");
+      a.halign = raw.halign || "center";
+      a.valign = raw.valign || "center";
+      return a;
+    }
+    function annoById(id) {
+      return annoList().find((a) => a.id === id) || null;
+    }
+
     /* Ensure a node exists for a link endpoint reference; auto-create unknown. */
     function resolveNode(ref) {
       const p = AppState.project;
@@ -1515,6 +2614,8 @@
         const id = node.icon.slice(7);
         return (s.custom_icons && s.custom_icons[id]) || ICONS.unknown;
       }
+      if (node.icon && node.icon.indexOf("vendor:") === 0)
+        return VENDOR_ICONS[node.icon.slice(7)] || ICONS.unknown;
       if (node.icon && ICONS[node.icon]) return ICONS[node.icon];
       const mapped = s.icon_map && s.icon_map[node.type];
       if (mapped) {
@@ -1522,9 +2623,22 @@
           const id = mapped.slice(7);
           return (s.custom_icons && s.custom_icons[id]) || ICONS.unknown;
         }
+        if (mapped.indexOf("vendor:") === 0)
+          return VENDOR_ICONS[mapped.slice(7)] || ICONS.unknown;
         if (ICONS[mapped]) return ICONS[mapped];
       }
       return ICONS[node.type] || ICONS.unknown;
+    }
+    // Resolve a data URI for any icon value (used by the picker thumbnails).
+    function iconUriForValue(value, node) {
+      if (!value) return ICONS[node.type] || ICONS.unknown; // auto (by type)
+      if (value.indexOf("vendor:") === 0)
+        return VENDOR_ICONS[value.slice(7)] || ICONS.unknown;
+      if (value.indexOf("custom:") === 0) {
+        const ci = AppState.project.settings.custom_icons || {};
+        return ci[value.slice(7)] || ICONS.unknown;
+      }
+      return ICONS[value] || ICONS.unknown;
     }
 
     /* ---------- Edge visual computation ---------- */
@@ -1595,11 +2709,15 @@
     }
     function buildStylesheet() {
       const t = themeColors();
+      const light = AppState.ui.theme === "light";
       return [
         {
           selector: "node",
           style: {
-            "background-image": (ele) => nodeIcon(ele.data("node")),
+            "background-image": (ele) => {
+              const n = ele.data("node");
+              return n ? nodeIcon(n) : "none";
+            },
             "background-fit": "contain",
             "background-clip": "none",
             "background-opacity": 0,
@@ -1618,6 +2736,7 @@
             "text-outline-width": 0,
             "border-width": 0,
             "min-zoomed-font-size": 6,
+            "z-index": Z_NODE,
           },
         },
         {
@@ -1659,6 +2778,75 @@
           },
         },
         {
+          // physical-view location containers
+          selector: ".loc",
+          style: {
+            "background-image": "none",
+            "background-opacity": light ? 0.55 : 0.35,
+            "border-style": "solid",
+            "border-width": 1.5,
+            "font-weight": "bold",
+            "text-valign": "top",
+            "text-halign": "center",
+            "text-margin-y": 4,
+            "text-wrap": "wrap",
+            "min-zoomed-font-size": 0,
+          },
+        },
+        {
+          selector: ".loc-site",
+          style: {
+            "background-color": light ? "#e7f0fb" : "#12233a",
+            "border-color": "#4d9fff",
+            "font-size": 16,
+            color: "#4d9fff",
+            padding: "30px",
+            "min-width": 160,
+            "min-height": 120,
+          },
+        },
+        {
+          selector: ".loc-building",
+          style: {
+            "background-color": light ? "#e8f5e9" : "#16281a",
+            "border-color": "#66bb6a",
+            "font-size": 14,
+            color: light ? "#3a7d3f" : "#8bd68f",
+            padding: "26px",
+            "min-width": 140,
+            "min-height": 110,
+          },
+        },
+        {
+          selector: ".loc-floor",
+          style: {
+            "background-color": light ? "#fff4e2" : "#2a2214",
+            "border-color": "#ffb74d",
+            "border-style": "dashed",
+            "font-size": 13,
+            color: light ? "#a6741a" : "#ffca7a",
+            padding: "22px",
+            "min-width": 120,
+            "min-height": 100,
+          },
+        },
+        {
+          selector: ".loc-cabinet",
+          style: {
+            "background-color": light ? "#f3e9f7" : "#241a2b",
+            "border-color": "#ab47bc",
+            "font-size": 12,
+            color: light ? "#8e3ca0" : "#ce93d8",
+            padding: "16px",
+            "min-width": 80,
+            "min-height": 90,
+          },
+        },
+        {
+          selector: ".loc:selected",
+          style: { "border-width": 3, "border-color": "#4d9fff" },
+        },
+        {
           selector: "edge",
           style: {
             "curve-style": "bezier",
@@ -1677,6 +2865,7 @@
             "text-background-padding": 2,
             "text-background-shape": "round-rectangle",
             "min-zoomed-font-size": 5,
+            "z-index": Z_EDGE,
           },
         },
         {
@@ -1691,6 +2880,47 @@
         {
           selector: "edge.search-hit",
           style: { "line-color": "#ffca28", opacity: 1, "z-index": 90 },
+        },
+        {
+          // annotation nodes (shapes + text) — fully data-driven
+          selector: ".anno",
+          style: {
+            "background-image": "none",
+            shape: (e) => e.data("shape") || "rectangle",
+            width: (e) => e.data("w") || 120,
+            height: (e) => e.data("h") || 80,
+            "background-color": (e) => e.data("bg") || "#4d9fff",
+            "background-opacity": (e) => {
+              const v = e.data("bgOpacity");
+              return v == null ? 0.15 : v;
+            },
+            "border-color": (e) => e.data("border") || "#4d9fff",
+            "border-width": (e) => e.data("borderWidth") || 0,
+            "border-style": "solid",
+            label: (e) => e.data("text") || "",
+            color: (e) => e.data("fontColor") || t.text,
+            "font-size": (e) => e.data("fontSize") || 13,
+            "text-halign": (e) => e.data("halign") || "center",
+            "text-valign": (e) => e.data("valign") || "center",
+            "text-wrap": "wrap",
+            "text-max-width": (e) => (e.data("w") || 120) - 8,
+            "text-margin-y": 0,
+            "z-index": (e) => (e.data("z") == null ? 0 : e.data("z")),
+            "min-zoomed-font-size": 0,
+          },
+        },
+        {
+          selector: ".anno:selected",
+          style: {
+            "background-color": (e) => e.data("bg") || "#4d9fff",
+            "background-opacity": (e) => {
+              const v = e.data("bgOpacity");
+              return v == null ? 0.15 : v;
+            },
+            "border-width": (e) => Math.max(2, e.data("borderWidth") || 0) + 1,
+            "border-color": "#4d9fff",
+            "border-style": "dashed",
+          },
         },
         { selector: ".dimmed", style: { opacity: 0.12 } },
         { selector: ".hidden", style: { display: "none" } },
@@ -1721,33 +2951,71 @@
       wireCyEvents();
     }
 
+    // Physical-view compound ids are prefixed to avoid ever colliding with node ids.
+    const LOC_EL = "loc::";
+    function locElId(id) {
+      return LOC_EL + id;
+    }
+
     /* ---------- Build cy elements from project ---------- */
     function buildElements() {
       const p = AppState.project;
       autoCreateEndpoints();
       const els = [];
-      // groups (compound parents) only if grouped
-      const siteParents = {};
-      if (AppState.ui.grouped) {
-        const sites = [...new Set(p.nodes.map((n) => n.site).filter(Boolean))];
-        sites.forEach((site) => {
-          const pid = "site::" + site;
-          siteParents[site] = pid;
+      const physical = AppState.ui.view === "physical";
+
+      if (physical) {
+        const locIds = new Set(locList().map((l) => l.id));
+        // location containers (compound nodes), parent = containing location
+        locList().forEach((loc) => {
+          const d = {
+            id: locElId(loc.id),
+            label: loc.name,
+            loc: loc,
+            _kind: loc.kind,
+          };
+          if (loc.parent && locIds.has(loc.parent))
+            d.parent = locElId(loc.parent);
           els.push({
             group: "nodes",
-            data: { id: pid, label: site, _isSite: true },
-            classes: "site-parent",
+            data: d,
+            classes: "loc loc-" + loc.kind,
           });
         });
+        // device nodes placed inside their cabinet/floor (or floating if unplaced)
+        p.nodes.forEach((n) => {
+          const d = { id: n.id, name: n.name, node: n };
+          if (n.location && locIds.has(n.location))
+            d.parent = locElId(n.location);
+          els.push({ group: "nodes", data: d });
+        });
+      } else {
+        // logical view — optional "group by site" compound parents
+        const siteParents = {};
+        if (AppState.ui.grouped) {
+          const sites = [
+            ...new Set(p.nodes.map((n) => n.site).filter(Boolean)),
+          ];
+          sites.forEach((site) => {
+            const pid = "site::" + site;
+            siteParents[site] = pid;
+            els.push({
+              group: "nodes",
+              data: { id: pid, label: site, _isSite: true },
+              classes: "site-parent",
+            });
+          });
+        }
+        p.nodes.forEach((n) => {
+          const d = { id: n.id, name: n.name, node: n };
+          if (AppState.ui.grouped && n.site && siteParents[n.site])
+            d.parent = siteParents[n.site];
+          const el = { group: "nodes", data: d };
+          if (n.x != null && n.y != null) el.position = { x: n.x, y: n.y };
+          els.push(el);
+        });
       }
-      p.nodes.forEach((n) => {
-        const d = { id: n.id, name: n.name, node: n };
-        if (AppState.ui.grouped && n.site && siteParents[n.site])
-          d.parent = siteParents[n.site];
-        const el = { group: "nodes", data: d };
-        if (n.x != null && n.y != null) el.position = { x: n.x, y: n.y };
-        els.push(el);
-      });
+
       p.links.forEach((l) => {
         const v = computeEdgeVisuals(l);
         els.push({
@@ -1764,6 +3032,31 @@
             _opacity: v.opacity,
             _midLabel: v.midLabel,
           },
+        });
+      });
+      // annotations (shapes + text) — drawn in both views, at their own position
+      annoList().forEach((a) => {
+        els.push({
+          group: "nodes",
+          classes: "anno anno-" + a.kind,
+          data: {
+            id: a.id,
+            anno: a,
+            shape: a.shape,
+            w: a.w,
+            h: a.h,
+            bg: a.bg,
+            bgOpacity: a.bgOpacity,
+            border: a.border,
+            borderWidth: a.borderWidth,
+            text: a.text,
+            fontSize: a.fontSize,
+            fontColor: a.fontColor,
+            halign: a.halign,
+            valign: a.valign,
+            z: a.z,
+          },
+          position: { x: a.x, y: a.y },
         });
       });
       return els;
@@ -1790,6 +3083,8 @@
       updateStatus();
       validate();
       updateUndoButtons();
+      updateAnnoHandles();
+      syncToolStates();
       saveAutosave();
     }
 
@@ -1806,11 +3101,47 @@
     /* ============================================================================
    Layouts
    ========================================================================== */
+    // Physical view has its own compound-aware layout regardless of the
+    // logical layout choice.
+    function layoutPhysical(fit) {
+      const cy = AppState.cy;
+      const hasFcose = !!window.cytoscapeFcose;
+      const opts = hasFcose
+        ? {
+            name: "fcose",
+            quality: "proof",
+            animate: false,
+            randomize: true,
+            nodeRepulsion: 6000,
+            idealEdgeLength: 90,
+            nodeSeparation: 130,
+            packComponents: true,
+            tile: true,
+            padding: 50,
+          }
+        : { name: "cose", animate: false, padding: 40, nestingFactor: 1.2 };
+      try {
+        const lay = cy.elements().not(".anno").layout(opts);
+        lay.one("layoutstop", () => {
+          if (fit) cy.fit(cy.elements(":visible"), 40);
+        });
+        lay.run();
+      } catch (e) {
+        console.warn("physical layout error", e);
+        cy.elements().not(".anno").layout({ name: "grid", animate: false }).run();
+        if (fit) cy.fit(cy.elements(":visible"), 40);
+      }
+    }
+
     function runLayout(name, fit) {
       const cy = AppState.cy;
+      if (AppState.ui.view === "physical") {
+        layoutPhysical(fit);
+        return;
+      }
       AppState.ui.layout = name;
       AppState.project.settings.layout = name;
-      markMenuActive("#layoutMenu", "data-layout", name);
+      syncToolStates();
       let opts;
       if (name === "manual") {
         if (fit) cy.fit(cy.elements(":visible"), 40);
@@ -1858,7 +3189,7 @@
         opts = { name: "cose", animate: false, padding: 40 };
       }
       try {
-        const lay = cy.layout(opts);
+        const lay = cy.elements().not(".anno").layout(opts);
         lay.one("layoutstop", () => {
           persistPositions();
           if (fit) cy.fit(cy.elements(":visible"), 40);
@@ -1867,7 +3198,7 @@
       } catch (e) {
         console.warn("layout error", e);
         toast("Layout '" + name + "' failed, using grid", true);
-        cy.layout({ name: "grid", animate: false }).run();
+        cy.elements().not(".anno").layout({ name: "grid", animate: false }).run();
       }
     }
     function layerRank(n) {
@@ -1908,6 +3239,8 @@
       if (fit) cy.fit(cy.elements(":visible"), 40);
     }
     function persistPositions() {
+      // Physical view uses its own layout; don't overwrite the logical x/y.
+      if (AppState.ui.view === "physical") return;
       const cy = AppState.cy,
         map = {};
       AppState.project.nodes.forEach((n) => (map[n.id] = n));
@@ -1918,6 +3251,20 @@
           const p = n.position();
           nd.x = Math.round(p.x);
           nd.y = Math.round(p.y);
+        }
+      });
+    }
+    // Annotations share one position across views; always persist.
+    function persistAnnotationPositions() {
+      const cy = AppState.cy,
+        map = {};
+      annoList().forEach((a) => (map[a.id] = a));
+      cy.nodes(".anno").forEach((n) => {
+        const a = map[n.id()];
+        if (a) {
+          const p = n.position();
+          a.x = Math.round(p.x);
+          a.y = Math.round(p.y);
         }
       });
     }
@@ -2044,8 +3391,12 @@
           searchHits = searchHits.union(e.connectedNodes());
         }
       });
-      // hide parents with no visible children
+      // hide empty logical group parents; physical location containers always show
       cy.nodes(":parent").forEach((p) => {
+        if (p.hasClass("loc")) {
+          p.removeClass("hidden");
+          return;
+        }
         if (p.children(":visible").length === 0) p.addClass("hidden");
         else p.removeClass("hidden");
       });
@@ -2104,6 +3455,19 @@
           ttRow("Circuit", l.circuit_id);
         tip.style.display = "block";
       });
+      cy.on("mouseover", "node.loc", (evt) => {
+        const loc = evt.target.data("loc");
+        if (!loc) return;
+        const fields = LOC_FIELDS[loc.kind] || [];
+        tip.innerHTML =
+          `<div class="tt-title">${esc(loc.name)} <span style="color:var(--text3);font-weight:500">${LOC_KIND_LABEL[loc.kind]}</span></div>` +
+          ttRow("Path", locPathLabel(loc.id)) +
+          fields
+            .filter((f) => f[2] !== "textarea")
+            .map((f) => ttRow(f[1], loc[f[0]]))
+            .join("");
+        tip.style.display = "block";
+      });
       cy.on("mouseout", "node,edge", () => {
         tip.style.display = "none";
       });
@@ -2119,6 +3483,18 @@
         }
       });
       cy.on("tap", "node", (evt) => {
+        const anno = evt.target.data("anno");
+        if (anno) {
+          tip.style.display = "none";
+          openDetail("annotation", anno);
+          return;
+        }
+        const loc = evt.target.data("loc");
+        if (loc) {
+          tip.style.display = "none";
+          openDetail(loc.kind, loc);
+          return;
+        }
         if (evt.target.isParent()) {
           onSelectGroup(evt.target.id());
           return;
@@ -2157,14 +3533,20 @@
       });
       cy.on("dragfreeon", "node", () => {
         persistPositions();
+        persistAnnotationPositions();
         pushSnapshotDebounced();
         saveAutosave();
       });
       cy.on("select unselect", "node", () => {
         updateBulkBar();
+        updateAnnoHandles();
+      });
+      cy.on("drag position", "node", () => {
+        updateAnnoHandles();
       });
       cy.on("zoom pan", () => {
         updateStatus();
+        updateAnnoHandles();
       });
     }
     function ttRow(label, val) {
@@ -2201,8 +3583,45 @@
         return `<div class="field"><label>${esc(label)}</label><textarea id="${id}" data-key="${key}">${esc(val)}</textarea></div>`;
       return `<div class="field"><label>${esc(label)}</label><input id="${id}" data-key="${key}" value="${esc(val)}" ${opts.attr || ""}/></div>`;
     }
+    function nodeLocationOptions(cur) {
+      const opts = locList().filter(
+        (l) => l.kind === "cabinet" || l.kind === "floor",
+      );
+      return (
+        `<option value=""${!cur ? " selected" : ""}>— unplaced —</option>` +
+        opts
+          .map(
+            (l) =>
+              `<option value="${esc(l.id)}"${cur === l.id ? " selected" : ""}>${esc(LOC_KIND_LABEL[l.kind])}: ${esc(locPathLabel(l.id))}</option>`,
+          )
+          .join("")
+      );
+    }
+    // parent-location <select> options for a given child kind
+    function locParentOptions(childKind, cur) {
+      const pk = LOC_PARENT_KIND[childKind];
+      if (!pk) return "";
+      const opts = locList().filter((l) => l.kind === pk);
+      return (
+        `<option value=""${!cur ? " selected" : ""}>— none —</option>` +
+        opts
+          .map(
+            (l) =>
+              `<option value="${esc(l.id)}"${cur === l.id ? " selected" : ""}>${esc(locPathLabel(l.id))}</option>`,
+          )
+          .join("")
+      );
+    }
     function openDetail(kind, obj) {
       if (!obj) return;
+      if (kind === "annotation") {
+        openAnnotationDetail(obj);
+        return;
+      }
+      if (LOCATION_KINDS.includes(kind)) {
+        openLocationDetail(kind, obj);
+        return;
+      }
       AppState.ui.selectedId = obj.id;
       refreshSelection();
       const p = $("#panel");
@@ -2212,12 +3631,13 @@
     <div class="panel-body">
       ${fieldInput("Name", "name", obj.name)}
       ${fieldInput("Type", "type", obj.type, { type: "select", options: NODE_TYPES })}
-      <div class="field two"><div>${fieldInput("Site", "site", obj.site)}</div><div>${fieldInput("Layer", "layer", obj.layer, { type: "select", options: LAYERS, allowEmpty: true })}</div></div>
+      <div class="field"><label>Location (physical)</label><select id="f_location" data-key="location">${nodeLocationOptions(obj.location)}</select></div>
+      <div class="field two"><div>${fieldInput(obj.location ? "Site (from location)" : "Site", "site", obj.location ? nodeSiteFromLocation(obj) : obj.site, { attr: obj.location ? "readonly" : "" })}</div><div>${fieldInput("Layer", "layer", obj.layer, { type: "select", options: LAYERS, allowEmpty: true })}</div></div>
       ${fieldInput("Mgmt IP", "mgmt_ip", obj.mgmt_ip)}
       <div class="field two"><div>${fieldInput("Vendor", "vendor", obj.vendor)}</div><div>${fieldInput("Model", "model", obj.model)}</div></div>
       ${fieldInput("Notes", "notes", obj.notes, { type: "textarea" })}
       <div class="field"><label>Icon</label>
-        <select id="f_icon" data-key="icon"><option value="">(auto by type)</option>${NODE_TYPES.map((t) => `<option value="${t}"${obj.icon === t ? " selected" : ""}>${t}</option>`).join("")}${customIconOptions(obj.icon)}</select>
+        ${buildIconPicker(obj)}
         <button class="btn" id="pUploadIcon" style="margin-top:6px">Upload custom icon…</button>
       </div>
     </div>
@@ -2233,6 +3653,7 @@
           AppState._iconTargetNode = obj.id;
           $("#fileIcon").click();
         };
+        wireIconPicker(obj);
       } else {
         const l = obj;
         p.innerHTML = `
@@ -2258,6 +3679,104 @@
         };
       }
     }
+    function openLocationDetail(kind, loc) {
+      AppState.ui.selectedId = locElId(loc.id);
+      refreshSelection();
+      const p = $("#panel");
+      const pk = LOC_PARENT_KIND[kind];
+      const fields = LOC_FIELDS[kind] || [];
+      const parentField = pk
+        ? `<div class="field"><label>${esc(LOC_KIND_LABEL[pk])} (parent)</label><select id="f_parent" data-key="parent">${locParentOptions(kind, loc.parent)}</select></div>`
+        : "";
+      p.innerHTML = `
+    <div class="panel-head"><h3><span class="ptype">${esc(LOC_KIND_LABEL[kind].toUpperCase())}</span> ${esc(loc.name)}</h3><button class="close-x" id="pClose">×</button></div>
+    <div class="panel-body">
+      ${fieldInput("Name", "name", loc.name)}
+      ${parentField}
+      ${fields
+        .map((f) =>
+          fieldInput(f[1], f[0], loc[f[0]] || "", f[2] ? { type: f[2] } : {}),
+        )
+        .join("")}
+      ${pk ? "" : '<div class="hint">Top-level location.</div>'}
+    </div>
+    <div class="panel-foot"><button class="btn primary" id="pSave" style="flex:1">Save</button><button class="btn" id="pCancel">Cancel</button><button class="btn danger" id="pDelete">Delete</button></div>`;
+      p.classList.add("open");
+      $("#pClose").onclick = $("#pCancel").onclick = closeDetail;
+      $("#pSave").onclick = () => saveLocationEdit(loc.id);
+      $("#pDelete").onclick = () => deleteLocation(loc.id);
+    }
+    function saveLocationEdit(id) {
+      const loc = locById(id);
+      if (!loc) return;
+      const vals = readPanelValues();
+      pushSnapshot();
+      loc.name = (vals.name || "").trim() || loc.name;
+      if ("parent" in vals) loc.parent = vals.parent || "";
+      (LOC_FIELDS[loc.kind] || []).forEach((f) => {
+        if (f[0] in vals) loc[f[0]] = (vals[f[0]] || "").trim();
+      });
+      syncNodeSites();
+      fullRender();
+      openLocationDetail(loc.kind, loc);
+      toast(LOC_KIND_LABEL[loc.kind] + " saved");
+    }
+    function addLocation(kind, parentId) {
+      pushSnapshot();
+      const loc = normLocation({
+        kind: kind,
+        name: "new-" + kind,
+        parent: parentId || "",
+      });
+      loc.id = uid("loc");
+      AppState.project.locations.push(loc);
+      fullRender();
+      openLocationDetail(kind, loc);
+      toast(LOC_KIND_LABEL[kind] + " added");
+    }
+    // recursively collect a location and all its descendants
+    function locDescendants(id) {
+      const out = [id];
+      locChildren(id).forEach((c) => out.push(...locDescendants(c.id)));
+      return out;
+    }
+    function deleteLocation(id) {
+      const loc = locById(id);
+      if (!loc) return;
+      const ids = locDescendants(id);
+      const kids = ids.length - 1;
+      const affected = AppState.project.nodes.filter((n) =>
+        ids.includes(n.location),
+      ).length;
+      let msg = `Delete ${LOC_KIND_LABEL[loc.kind].toLowerCase()} "${loc.name}"`;
+      if (kids) msg += ` and its ${kids} child location(s)`;
+      if (affected) msg += `; ${affected} node(s) will become unplaced`;
+      msg += "?";
+      if (!confirm(msg)) return;
+      pushSnapshot();
+      const rm = new Set(ids);
+      AppState.project.locations = AppState.project.locations.filter(
+        (l) => !rm.has(l.id),
+      );
+      AppState.project.nodes.forEach((n) => {
+        if (rm.has(n.location)) n.location = "";
+      });
+      syncNodeSites();
+      if (AppState.ui.selectedId === locElId(id)) AppState.ui.selectedId = null;
+      closeDetail();
+      fullRender();
+      if ($("#locationsOverlay").classList.contains("open")) renderLocations();
+      toast("Deleted");
+    }
+    // keep node.site in sync with the physical hierarchy for placed nodes
+    function syncNodeSites() {
+      AppState.project.nodes.forEach((n) => {
+        if (n.location) {
+          const s = nodeSiteFromLocation(n);
+          if (s) n.site = s;
+        }
+      });
+    }
     function customIconOptions(cur) {
       const ci = AppState.project.settings.custom_icons || {};
       return Object.keys(ci)
@@ -2266,6 +3785,49 @@
             `<option value="custom:${id}"${cur === "custom:" + id ? " selected" : ""}>custom: ${esc(id)}</option>`,
         )
         .join("");
+    }
+    // Visual icon picker: generic type icons + vendor marks + custom icons.
+    function buildIconPicker(obj) {
+      const cur = obj.icon || "";
+      const tile = (val, label) => {
+        let ty = "";
+        if (val.indexOf("vendor:") === 0) ty = DEVICE_TYPE[val.slice(7)] || "";
+        else if (val && val.indexOf("custom:") !== 0)
+          ty = NODE_TYPES.includes(val) ? val : "";
+        return `<button type="button" class="icon-pick${cur === val ? " on" : ""}" data-icon="${esc(val)}"${ty ? ` data-type="${esc(ty)}"` : ""} title="${esc(label)}"><img src="${iconUriForValue(val, obj)}" alt="${esc(label)}"/></button>`;
+      };
+      const customs = Object.keys(AppState.project.settings.custom_icons || {});
+      return (
+        `<input type="hidden" id="f_icon" data-key="icon" value="${esc(cur)}"/>` +
+        `<div class="icon-picker" id="iconPicker">` +
+        `<div class="icon-cat">Auto &amp; device icons</div>` +
+        `<div class="icon-row">${tile("", "Auto (by type)")}${VENDORS.map((v) => tile("vendor:" + v.key, v.label)).join("")}</div>` +
+        `<div class="icon-cat">Generic</div>` +
+        `<div class="icon-row">${NODE_TYPES.map((t) => tile(t, t)).join("")}</div>` +
+        (customs.length
+          ? `<div class="icon-cat">Custom</div><div class="icon-row">${customs.map((id) => tile("custom:" + id, id)).join("")}</div>`
+          : "") +
+        `</div>`
+      );
+    }
+    function wireIconPicker(obj) {
+      $$("#iconPicker .icon-pick").forEach((b) => {
+        b.onclick = () => {
+          $("#f_icon").value = b.dataset.icon;
+          $$("#iconPicker .icon-pick").forEach((x) =>
+            x.classList.remove("on"),
+          );
+          b.classList.add("on");
+          // auto-switch the node type to match the chosen icon
+          if (b.dataset.type) {
+            const sel = $("#f_type");
+            if (sel) sel.value = b.dataset.type;
+          }
+          const el = AppState.cy.getElementById(obj.id); // live preview
+          if (el && el.length)
+            el.style("background-image", b.querySelector("img").src);
+        };
+      });
     }
     function closeDetail() {
       $("#panel").classList.remove("open");
@@ -2277,15 +3839,231 @@
       });
       return o;
     }
+
+    /* ---------- Annotation detail + CRUD ---------- */
+    function openAnnotationDetail(a) {
+      AppState.ui.selectedId = a.id;
+      refreshSelection();
+      const p = $("#panel");
+      const isText = a.kind === "text";
+      const color = (label, key, val) =>
+        `<div><label>${esc(label)}</label><input type="color" id="f_${key}" data-key="${key}" value="${esc(val || "#000000")}" style="width:100%;height:32px;padding:2px"/></div>`;
+      const num = (label, key, val, step, min) =>
+        `<div><label>${esc(label)}</label><input type="number" id="f_${key}" data-key="${key}" value="${esc(val)}"${step ? ` step="${step}"` : ""}${min != null ? ` min="${min}"` : ""}/></div>`;
+      const shapeSel = isText
+        ? ""
+        : `<div class="field"><label>Shape</label><select id="f_shape" data-key="shape">${ANNO_SHAPES.map((s) => `<option value="${s}"${a.shape === s ? " selected" : ""}>${s}</option>`).join("")}</select></div>`;
+      p.innerHTML = `
+    <div class="panel-head"><h3><span class="ptype">${isText ? "TEXT" : "SHAPE"}</span> Annotation</h3><button class="close-x" id="pClose">×</button></div>
+    <div class="panel-body">
+      <div class="field"><label>${isText ? "Text" : "Label (optional)"}</label><textarea id="f_text" data-key="text">${esc(a.text)}</textarea></div>
+      ${shapeSel}
+      <div class="field two">${num("Width", "w", a.w, 1, 10)}${num("Height", "h", a.h, 1, 10)}</div>
+      ${isText ? "" : `<div class="field two">${color("Fill color", "bg", a.bg)}${num("Fill opacity (0–1)", "bgOpacity", a.bgOpacity, "0.05", 0)}</div>`}
+      ${isText ? "" : `<div class="field two">${color("Border color", "border", a.border)}${num("Border width", "borderWidth", a.borderWidth, 1, 0)}</div>`}
+      <div class="field two">${color("Text color", "fontColor", a.fontColor)}${num("Font size", "fontSize", a.fontSize, 1, 1)}</div>
+      <div class="field"><label>Z-index (layer)</label>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input type="number" id="f_z" data-key="z" value="${esc(a.z)}" style="flex:1"/>
+          <button class="btn" id="aBack" type="button">Send back</button>
+          <button class="btn" id="aFront" type="button">Bring front</button>
+        </div>
+        <div class="hint">Devices sit at ${Z_NODE}, links at ${Z_EDGE}. Lower = behind, higher = in front.</div>
+      </div>
+    </div>
+    <div class="panel-foot"><button class="btn primary" id="pSave" style="flex:1">Save</button><button class="btn" id="pCancel">Cancel</button><button class="btn danger" id="pDelete">Delete</button></div>`;
+      p.classList.add("open");
+      $("#pClose").onclick = $("#pCancel").onclick = closeDetail;
+      $("#pSave").onclick = () => saveAnnotationEdit(a.id);
+      $("#pDelete").onclick = () => deleteAnnotation(a.id);
+      $("#aFront").onclick = () => annoBringToFront(a.id);
+      $("#aBack").onclick = () => annoSendToBack(a.id);
+    }
+    function saveAnnotationEdit(id) {
+      const a = annoById(id);
+      if (!a) return;
+      const vals = readPanelValues();
+      const n = (v, d) => {
+        const x = Number(v);
+        return isNaN(x) ? d : x;
+      };
+      pushSnapshot();
+      if (vals.text != null) a.text = vals.text;
+      if (a.kind !== "text" && vals.shape)
+        a.shape = coerceEnum(vals.shape, ANNO_SHAPES, a.shape);
+      a.w = Math.max(10, n(vals.w, a.w));
+      a.h = Math.max(10, n(vals.h, a.h));
+      if (a.kind !== "text") {
+        a.bg = vals.bg || a.bg;
+        a.bgOpacity = Math.max(0, Math.min(1, n(vals.bgOpacity, a.bgOpacity)));
+        a.border = vals.border || a.border;
+        a.borderWidth = Math.max(0, n(vals.borderWidth, a.borderWidth));
+      }
+      a.fontColor = vals.fontColor || a.fontColor;
+      a.fontSize = Math.max(1, n(vals.fontSize, a.fontSize));
+      a.z = n(vals.z, a.z);
+      fullRender();
+      openAnnotationDetail(a);
+      toast("Annotation saved");
+    }
+    function addAnnotation(kind, shape) {
+      pushSnapshot();
+      const ex = AppState.cy.extent();
+      const a = normAnnotation({
+        kind: kind === "text" ? "text" : "shape",
+        shape: shape || "rectangle",
+        x: Math.round((ex.x1 + ex.x2) / 2),
+        y: Math.round((ex.y1 + ex.y2) / 2),
+        text: kind === "text" ? "Text" : "",
+      });
+      AppState.project.annotations = annoList();
+      AppState.project.annotations.push(a);
+      fullRender();
+      openAnnotationDetail(a);
+      toast((kind === "text" ? "Text" : "Shape") + " added");
+    }
+    function deleteAnnotation(id) {
+      pushSnapshot();
+      AppState.project.annotations = annoList().filter((a) => a.id !== id);
+      if (AppState.ui.selectedId === id) AppState.ui.selectedId = null;
+      closeDetail();
+      fullRender();
+      toast("Annotation deleted");
+    }
+    function annoBringToFront(id) {
+      const a = annoById(id);
+      if (!a) return;
+      pushSnapshot();
+      a.z = Math.max(Z_NODE, ...annoList().map((x) => x.z)) + 1;
+      fullRender();
+      if (AppState.ui.selectedId === id) openAnnotationDetail(a);
+    }
+    function annoSendToBack(id) {
+      const a = annoById(id);
+      if (!a) return;
+      pushSnapshot();
+      a.z = 0;
+      fullRender();
+      if (AppState.ui.selectedId === id) openAnnotationDetail(a);
+    }
+
+    /* ---------- On-canvas resize handles for annotations ---------- */
+    const ANNO_HANDLES = [
+      { k: "nw", hx: 0, hy: 0, cur: "nwse-resize" },
+      { k: "n", hx: 0.5, hy: 0, cur: "ns-resize" },
+      { k: "ne", hx: 1, hy: 0, cur: "nesw-resize" },
+      { k: "e", hx: 1, hy: 0.5, cur: "ew-resize" },
+      { k: "se", hx: 1, hy: 1, cur: "nwse-resize" },
+      { k: "s", hx: 0.5, hy: 1, cur: "ns-resize" },
+      { k: "sw", hx: 0, hy: 1, cur: "nesw-resize" },
+      { k: "w", hx: 0, hy: 0.5, cur: "ew-resize" },
+    ];
+    function ensureAnnoHandles() {
+      const wrap = $("#annoHandles");
+      if (wrap.childElementCount) return;
+      ANNO_HANDLES.forEach((h) => {
+        const el = document.createElement("div");
+        el.className = "anno-handle anno-handle-" + h.k;
+        el.style.cursor = h.cur;
+        el.dataset.hx = h.hx;
+        el.dataset.hy = h.hy;
+        el.addEventListener("mousedown", (e) => beginResize(e));
+        wrap.appendChild(el);
+      });
+    }
+    function hideAnnoHandles() {
+      $("#annoHandles").classList.remove("on");
+    }
+    function updateAnnoHandles() {
+      const cy = AppState.cy;
+      const sel = cy.nodes(":selected.anno");
+      const wrap = $("#annoHandles");
+      if (sel.length !== 1) {
+        wrap.classList.remove("on");
+        return;
+      }
+      ensureAnnoHandles();
+      const node = sel[0];
+      const rp = node.renderedPosition();
+      const rw = node.renderedOuterWidth(),
+        rh = node.renderedOuterHeight();
+      const x1 = rp.x - rw / 2,
+        y1 = rp.y - rh / 2;
+      wrap.classList.add("on");
+      [...wrap.children].forEach((el, i) => {
+        const h = ANNO_HANDLES[i];
+        el.style.left = Math.round(x1 + h.hx * rw) + "px";
+        el.style.top = Math.round(y1 + h.hy * rh) + "px";
+      });
+    }
+    function beginResize(ev) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      const cy = AppState.cy;
+      const sel = cy.nodes(":selected.anno");
+      if (sel.length !== 1) return;
+      const node = sel[0];
+      const a = annoById(node.id());
+      if (!a) return;
+      const hx = +ev.currentTarget.dataset.hx,
+        hy = +ev.currentTarget.dataset.hy;
+      const rect = $("#cy").getBoundingClientRect();
+      const zoom = cy.zoom(),
+        pan = cy.pan();
+      const box = {
+        left: a.x - a.w / 2,
+        right: a.x + a.w / 2,
+        top: a.y - a.h / 2,
+        bottom: a.y + a.h / 2,
+      };
+      const MIN = 20;
+      let snapped = false;
+      const toModel = (cx, cyy) => ({
+        x: (cx - rect.left - pan.x) / zoom,
+        y: (cyy - rect.top - pan.y) / zoom,
+      });
+      function onMove(e) {
+        if (!snapped) {
+          pushSnapshot();
+          snapped = true;
+        }
+        const m = toModel(e.clientX, e.clientY);
+        let { left, right, top, bottom } = box;
+        if (hx === 0) left = Math.min(m.x, right - MIN);
+        else if (hx === 1) right = Math.max(m.x, left + MIN);
+        if (hy === 0) top = Math.min(m.y, bottom - MIN);
+        else if (hy === 1) bottom = Math.max(m.y, top + MIN);
+        a.w = Math.round(right - left);
+        a.h = Math.round(bottom - top);
+        a.x = Math.round((left + right) / 2);
+        a.y = Math.round((top + bottom) / 2);
+        node.data("w", a.w);
+        node.data("h", a.h);
+        node.style({ width: a.w, height: a.h });
+        node.position({ x: a.x, y: a.y });
+        updateAnnoHandles();
+      }
+      function onUp() {
+        document.removeEventListener("mousemove", onMove);
+        document.removeEventListener("mouseup", onUp);
+        if (snapped) saveAutosave();
+        if (document.querySelector("#panel #f_w")) openAnnotationDetail(a);
+      }
+      document.addEventListener("mousemove", onMove);
+      document.addEventListener("mouseup", onUp);
+    }
     function saveNodeEdit(id) {
       const vals = readPanelValues();
       const node = AppState.project.nodes.find((n) => n.id === id);
       if (!node) return;
       pushSnapshot();
+      const loc = (vals.location || "").trim();
       Object.assign(node, {
         name: vals.name.trim() || node.name,
         type: vals.type,
-        site: vals.site.trim(),
+        location: loc,
+        // when placed in a location, site is derived from the hierarchy
+        site: loc ? nodeSiteFromLocation({ location: loc }) : vals.site.trim(),
         layer: vals.layer,
         mgmt_ip: vals.mgmt_ip.trim(),
         vendor: vals.vendor.trim(),
@@ -2368,7 +4146,7 @@
     function toggleDrawMode(on) {
       AppState.ui.drawMode = on != null ? on : !AppState.ui.drawMode;
       AppState.ui.drawSource = null;
-      $("#btnDrawLink").classList.toggle("active", AppState.ui.drawMode);
+      syncToolStates();
       $("#drawHint").style.display = AppState.ui.drawMode ? "block" : "none";
       AppState.cy.$("node").unselect();
     }
@@ -2412,7 +4190,21 @@
       const cm = $("#contextMenu");
       const id = el.id();
       let items = [];
-      if (isNode && !el.isParent()) {
+      const anno = el.data("anno");
+      const loc = el.data("loc");
+      if (anno) {
+        items = [
+          ["Edit…", () => openDetail("annotation", anno)],
+          ["Bring to front", () => annoBringToFront(id)],
+          ["Send to back", () => annoSendToBack(id)],
+          ["Delete", () => deleteAnnotation(id)],
+        ];
+      } else if (loc) {
+        items = [
+          ["Edit…", () => openDetail(loc.kind, loc)],
+          ["Delete", () => deleteLocation(loc.id)],
+        ];
+      } else if (isNode && !el.isParent()) {
         items = [
           ["Edit…", () => openDetail("node", el.data("node"))],
           [
@@ -2480,7 +4272,9 @@
       $("#contextMenu").style.display = "none";
     }
     function updateBulkBar() {
-      const sel = AppState.cy.nodes(":selected").filter((n) => !n.isParent());
+      const sel = AppState.cy
+        .nodes(":selected")
+        .filter((n) => !n.isParent() && !n.hasClass("anno"));
       const bar = $("#bulkBar");
       if (sel.length >= 2) {
         bar.style.display = "flex";
@@ -2607,10 +4401,18 @@
     }
     function guessKind(p) {
       const h = p.headers.map((x) => x.toLowerCase());
+      if (h.includes("kind")) return "locations";
       if (h.includes("source") && h.includes("target")) return "links";
       if (h.includes("name") || h.includes("mgmt_ip") || h.includes("type"))
         return "nodes";
       return "nodes";
+    }
+    function fieldsForKind(kind) {
+      return kind === "links"
+        ? LINK_FIELDS
+        : kind === "locations"
+          ? LOCATION_FIELDS
+          : NODE_FIELDS;
     }
     const NODE_FIELDS = [
       "name",
@@ -2646,20 +4448,23 @@
     ];
     function startWizard(parsedFiles) {
       _csvPending = { files: parsedFiles };
+      const forceLoc = !!AppState._importLocations;
+      AppState._importLocations = false;
       const body = $("#importBody");
+      const kindOpt = (val, kind, label) =>
+        `<option value="${val}"${kind === val ? " selected" : ""}>${label}</option>`;
       body.innerHTML =
         parsedFiles
           .map((p, idx) => {
-            const kind = guessKind(p);
+            const kind = forceLoc ? "locations" : guessKind(p);
             p.kind = kind;
-            const fields = kind === "links" ? LINK_FIELDS : NODE_FIELDS;
+            const fields = fieldsForKind(kind);
             return `<div class="csv-file" data-idx="${idx}" style="margin-bottom:16px;border:1px solid var(--border);border-radius:8px;padding:12px">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
         <b>${esc(p.name)}</b> <span class="pill">${p.rows.length} rows</span>
         <label style="margin-left:auto;color:var(--text2)">Import as
           <select class="kindSel" data-idx="${idx}" style="margin-left:6px;padding:4px;background:var(--bg);border:1px solid var(--border);border-radius:5px;color:var(--text)">
-            <option value="nodes"${kind === "nodes" ? " selected" : ""}>Nodes</option>
-            <option value="links"${kind === "links" ? " selected" : ""}>Links</option>
+            ${kindOpt("nodes", kind, "Nodes")}${kindOpt("links", kind, "Links")}${kindOpt("locations", kind, "Locations")}
           </select></label>
       </div>
       <div class="mapWrap" data-idx="${idx}">${renderMapping(p, fields)}</div>
@@ -2673,9 +4478,8 @@
           (sel.onchange = () => {
             const idx = +sel.dataset.idx;
             _csvPending.files[idx].kind = sel.value;
-            const fields = sel.value === "links" ? LINK_FIELDS : NODE_FIELDS;
             body.querySelector('.mapWrap[data-idx="' + idx + '"]').innerHTML =
-              renderMapping(_csvPending.files[idx], fields);
+              renderMapping(_csvPending.files[idx], fieldsForKind(sel.value));
           }),
       );
       $("#importFoot").innerHTML =
@@ -2695,7 +4499,7 @@
                 h.toLowerCase() === f.toLowerCase() ||
                 h.toLowerCase().replace(/[\s_]/g, "") === f.replace(/_/g, ""),
             );
-            return `<div class="map-row"><div class="col-name">${esc(f)}${["name", "source", "target"].includes(f) ? ' <span class="pill">req</span>' : ""}</div>
+            return `<div class="map-row"><div class="col-name">${esc(f)}${["name", "source", "target", "kind"].includes(f) ? ' <span class="pill">req</span>' : ""}</div>
         <select class="mapSel" data-field="${f}">
           <option value="">— none —</option>
           ${p.headers.map((h) => `<option value="${esc(h)}"${h === auto ? " selected" : ""}>${esc(h)}</option>`).join("")}
@@ -2708,7 +4512,8 @@
       const warnings = [];
       const mode = $("#mergeMode").value;
       const newNodes = [],
-        newLinks = [];
+        newLinks = [],
+        newLocations = [];
       $$(".csv-file").forEach((fileEl) => {
         const idx = +fileEl.dataset.idx;
         const p = _csvPending.files[idx];
@@ -2723,6 +4528,9 @@
           if (kind === "nodes") {
             if (!obj.name && !obj.id) return;
             newNodes.push(normNode(obj, warnings));
+          } else if (kind === "locations") {
+            if (!obj.name && !obj.id) return;
+            newLocations.push(normLocation(obj, warnings));
           } else {
             if (!obj.source || !obj.target) return;
             newLinks.push(normLink(obj, warnings));
@@ -2734,6 +4542,40 @@
       if (mode === "replace") {
         p.nodes = [];
         p.links = [];
+        p.locations = [];
+      }
+      // locations merge + parent (id or name) resolution
+      if (newLocations.length) {
+        p.locations = p.locations || [];
+        newLocations.forEach((nl) => {
+          const ex = p.locations.find(
+            (x) =>
+              x.id === nl.id ||
+              (x.kind === nl.kind &&
+                x.name.toLowerCase() === nl.name.toLowerCase() &&
+                String(x.parent || "").toLowerCase() ===
+                  String(nl.parent || "").toLowerCase()),
+          );
+          if (!ex) p.locations.push(nl);
+          else if (mode === "update") {
+            Object.keys(nl).forEach((k) => {
+              if (nl[k] !== "" && nl[k] != null && k !== "id") ex[k] = nl[k];
+            });
+          }
+        });
+        p.locations.forEach((loc) => {
+          if (!loc.parent) return;
+          if (p.locations.some((x) => x.id === loc.parent)) return; // already an id
+          const pk = LOC_PARENT_KIND[loc.kind];
+          const ref = String(loc.parent).toLowerCase();
+          const match = p.locations.find(
+            (x) =>
+              x.kind === pk &&
+              (x.name.toLowerCase() === ref || x.id === slug(loc.parent)),
+          );
+          loc.parent = match ? match.id : "";
+        });
+        syncNodeSites();
       }
       // nodes merge
       newNodes.forEach((nn) => {
@@ -2775,8 +4617,11 @@
       const errs = AppState.issues.length;
       toast(
         `Imported ${newNodes.length} nodes, ${newLinks.length} links` +
+          (newLocations.length ? `, ${newLocations.length} locations` : "") +
           (warnings.length ? ` · ${warnings.length} mapping warnings` : ""),
       );
+      if (newLocations.length && $("#locationsOverlay").classList.contains("open"))
+        renderLocations();
       if (AppState.issues.length) flashIssues();
     }
     function hasUnpositioned() {
@@ -2810,8 +4655,11 @@
       if (data.settings) Object.assign(p.settings, data.settings);
       p.nodes = (data.nodes || []).map((n) => normNode(n));
       p.links = (data.links || []).map((l) => normLink(l));
+      p.locations = (data.locations || []).map((l) => normLocation(l));
+      p.annotations = (data.annotations || []).map((a) => normAnnotation(a));
       p.groups = data.groups || [];
       AppState.project = p;
+      syncNodeSites();
       if (p.settings.custom_icons)
         preloadIcons(Object.values(p.settings.custom_icons));
       AppState.undo = [];
@@ -3077,9 +4925,17 @@
       const ltypes = uniq(p.links.map((l) => l.link_type));
       const medias = uniq(p.links.map((l) => l.media));
       const statuses = uniq(p.links.map((l) => l.status));
-      const vlans = uniq([].concat(...p.links.map((l) => parseVlans(l.vlan))))
+      // Trunk ranges (e.g. "1-4094") expand to thousands of VLANs; rendering a
+      // chip per VLAN makes the modal huge and unscrollable. Cap the list.
+      const VLAN_CAP = 200;
+      let vlans = uniq([].concat(...p.links.map((l) => parseVlans(l.vlan))))
         .sort((a, b) => a - b)
         .map(String);
+      let vlanTrunc = 0;
+      if (vlans.length > VLAN_CAP) {
+        vlanTrunc = vlans.length - VLAN_CAP;
+        vlans = vlans.slice(0, VLAN_CAP);
+      }
       const grp = (title, key, vals) =>
         `<div class="filter-group"><h5>${title} (OR)</h5><div class="chips">` +
         (vals.length
@@ -3098,6 +4954,9 @@
         grp("Link type", "link_type", ltypes) +
         grp("Media", "media", medias) +
         grp("VLAN", "vlan", vlans) +
+        (vlanTrunc
+          ? `<div class="hint" style="margin-top:-6px">+${vlanTrunc} more VLAN(s) hidden (showing lowest ${VLAN_CAP}). Use the toolbar search to find a specific VLAN.</div>`
+          : "") +
         grp("Status", "status", statuses);
       $$("#filtersBody .chip").forEach(
         (c) =>
@@ -3131,6 +4990,141 @@
     }
 
     /* ============================================================================
+   Views (logical / physical) + Locations manager
+   ========================================================================== */
+    function setView(v) {
+      if (!["logical", "physical"].includes(v)) return;
+      const changed = v !== AppState.ui.view;
+      AppState.ui.view = v;
+      syncToolStates();
+      if (!changed) return;
+      if (v === "physical") fullRender({ layout: true });
+      else fullRender(); // logical reuses stored positions
+    }
+    /* Reflect current mode on the left tools panel (active + disabled states). */
+    function syncToolStates() {
+      const physical = AppState.ui.view === "physical";
+      $$("#tools [data-view]").forEach((b) =>
+        b.classList.toggle("active", b.dataset.view === AppState.ui.view),
+      );
+      $$("#tools [data-layout]").forEach((b) => {
+        b.classList.toggle(
+          "active",
+          !physical && b.dataset.layout === AppState.ui.layout,
+        );
+        b.disabled = physical; // layouts are a logical-view concept
+      });
+      const g = $("#toolGroup");
+      if (g) {
+        g.classList.toggle("active", AppState.ui.grouped);
+        g.disabled = physical;
+      }
+      const d = $("#toolDraw");
+      if (d) d.classList.toggle("active", AppState.ui.drawMode);
+    }
+    function toggleTools(on) {
+      AppState.ui.toolsVisible =
+        on != null ? on : !AppState.ui.toolsVisible;
+      document.body.classList.toggle(
+        "tools-hidden",
+        !AppState.ui.toolsVisible,
+      );
+      $("#btnTools").classList.toggle("active", AppState.ui.toolsVisible);
+    }
+    function doGroupToggle() {
+      if (AppState.ui.view === "physical") return;
+      AppState.ui.grouped = !AppState.ui.grouped;
+      fullRender({ layout: true });
+    }
+    // Add an item (node / location / annotation), defaulting a location's
+    // parent to the current selection when compatible.
+    function doAdd(a) {
+      if (a === "node") addNode();
+      else if (a === "manage") openLocations();
+      else if (a === "rectangle") addAnnotation("shape", "round-rectangle");
+      else if (a === "circle") addAnnotation("shape", "ellipse");
+      else if (a === "text") addAnnotation("text");
+      else if (LOCATION_KINDS.includes(a)) {
+        const sel = AppState.ui.selectedId || "";
+        const selLoc =
+          sel.indexOf(LOC_EL) === 0 ? locById(sel.slice(LOC_EL.length)) : null;
+        const parent =
+          selLoc && selLoc.kind === LOC_PARENT_KIND[a] ? selLoc.id : "";
+        addLocation(a, parent);
+      }
+    }
+    function openLocations() {
+      renderLocations();
+      openOverlay("locationsOverlay");
+    }
+    function renderLocations() {
+      const b = $("#locationsBody");
+      const locs = locList();
+      if (!locs.length) {
+        b.innerHTML = `<div class="hint">No locations yet. Add a site to get started, or import a CSV. A location CSV needs at least <b>kind</b> and <b>name</b> columns (kind = site/building/floor/cabinet), plus an optional <b>parent</b> (name or id).</div>`;
+        return;
+      }
+      const nodeCountByLoc = {};
+      AppState.project.nodes.forEach((n) => {
+        if (n.location)
+          nodeCountByLoc[n.location] = (nodeCountByLoc[n.location] || 0) + 1;
+      });
+      const renderRow = (loc) => {
+        const meta = [];
+        if (loc.code) meta.push(esc(loc.code));
+        const nc = nodeCountByLoc[loc.id];
+        if (nc) meta.push(nc + " node" + (nc > 1 ? "s" : ""));
+        const childKindAdd = LOC_CHILD_ADD[loc.kind];
+        return `<li>
+          <div class="loc-node" data-id="${esc(loc.id)}" data-kind="${loc.kind}">
+            <span class="loc-kind ${loc.kind}">${loc.kind}</span>
+            <span class="loc-name">${esc(loc.name)}</span>
+            ${meta.length ? `<span class="loc-meta">${meta.join(" · ")}</span>` : ""}
+            <span class="loc-actions">
+              ${childKindAdd ? `<button data-act="add" data-child="${childKindAdd}">+ ${esc(LOC_KIND_LABEL[childKindAdd])}</button>` : ""}
+              <button data-act="edit">Edit</button>
+              <button data-act="del">✕</button>
+            </span>
+          </div>
+          ${renderChildren(loc.id)}
+        </li>`;
+      };
+      const renderChildren = (pid) => {
+        const kids = locChildren(pid);
+        if (!kids.length) return "";
+        return `<ul>${kids.map(renderRow).join("")}</ul>`;
+      };
+      const roots = locs.filter((l) => !locById(l.parent));
+      b.innerHTML = `<ul class="loc-tree">${roots.map(renderRow).join("")}</ul>`;
+      b.querySelectorAll(".loc-node").forEach((row) => {
+        const id = row.dataset.id;
+        row.querySelectorAll("button[data-act]").forEach((btn) => {
+          btn.onclick = (e) => {
+            e.stopPropagation();
+            const act = btn.dataset.act;
+            if (act === "edit") {
+              closeOverlay("locationsOverlay");
+              const loc = locById(id);
+              if (loc) openLocationDetail(loc.kind, loc);
+            } else if (act === "del") {
+              deleteLocation(id);
+            } else if (act === "add") {
+              closeOverlay("locationsOverlay");
+              addLocation(btn.dataset.child, id);
+            }
+          };
+        });
+      });
+    }
+    // which child kind an "add" button under each location creates
+    const LOC_CHILD_ADD = {
+      site: "building",
+      building: "floor",
+      floor: "cabinet",
+      cabinet: null,
+    };
+
+    /* ============================================================================
    Settings (icon mapping + custom icons + project meta)
    ========================================================================== */
     function openSettings() {
@@ -3149,7 +5143,7 @@
         NODE_TYPES.map((t) => {
           const cur = (s.icon_map && s.icon_map[t]) || "";
           return `<div class="map-row"><div class="col-name"><img src="${nodeIconPreview(t)}" style="width:20px;height:20px;vertical-align:middle;margin-right:6px"/>${t}</div>
-       <select class="iconMapSel" data-type="${t}"><option value="">(default)</option>${iconChoices.map((o) => `<option value="${o}"${cur === o ? " selected" : ""}>${o}</option>`).join("")}${customs.map((id) => `<option value="custom:${id}"${cur === "custom:" + id ? " selected" : ""}>custom: ${esc(id)}</option>`).join("")}</select></div>`;
+       <select class="iconMapSel" data-type="${t}"><option value="">(default)</option>${iconChoices.map((o) => `<option value="${o}"${cur === o ? " selected" : ""}>${o}</option>`).join("")}${VENDORS.map((v) => `<option value="vendor:${v.key}"${cur === "vendor:" + v.key ? " selected" : ""}>${esc(v.label)}</option>`).join("")}${customs.map((id) => `<option value="custom:${id}"${cur === "custom:" + id ? " selected" : ""}>custom: ${esc(id)}</option>`).join("")}</select></div>`;
         }).join("") +
         `</div>
    <h4 style="margin:14px 0 6px">Custom icons</h4>
@@ -3198,6 +5192,8 @@
       const m = s.icon_map && s.icon_map[t];
       if (m && m.indexOf("custom:") === 0)
         return s.custom_icons[m.slice(7)] || ICONS.unknown;
+      if (m && m.indexOf("vendor:") === 0)
+        return VENDOR_ICONS[m.slice(7)] || ICONS.unknown;
       if (m && ICONS[m]) return ICONS[m];
       return ICONS[t];
     }
@@ -3574,7 +5570,180 @@
       const m = $("#" + id);
       const open = m.classList.contains("open");
       $$(".menu").forEach((x) => x.classList.remove("open"));
-      if (!open) m.classList.add("open");
+      if (!open) {
+        m.classList.add("open");
+        positionMenu(m);
+      }
+    }
+    /* Menus are position:fixed (so the toolbar's overflow clip can't hide them);
+       anchor each below its trigger button and keep it inside the viewport. */
+    function positionMenu(m) {
+      const trigger = m.parentElement && m.parentElement.querySelector(".btn");
+      if (!trigger) return;
+      const r = trigger.getBoundingClientRect();
+      const mw = m.offsetWidth || 210;
+      let left = r.left;
+      if (left + mw > window.innerWidth - 8)
+        left = Math.max(8, window.innerWidth - 8 - mw);
+      m.style.left = Math.round(left) + "px";
+      m.style.top = Math.round(r.bottom + 4) + "px";
+    }
+    function closeMenus() {
+      $$(".menu.open").forEach((m) => m.classList.remove("open"));
+    }
+    // Collapse the toolbar into the hamburger drawer only at mobile widths.
+    // Above this the toolbar scrolls horizontally if it doesn't fully fit.
+    const TOOLBAR_COMPACT_BP = 768;
+    function updateToolbarMode() {
+      const tb = $("#toolbar");
+      const wasCompact = tb.classList.contains("compact");
+      const compact = window.innerWidth <= TOOLBAR_COMPACT_BP;
+      tb.classList.toggle("compact", compact);
+      if (!compact) {
+        tb.classList.remove("nav-open");
+        $("#btnMenu").classList.remove("active");
+      } else if (!wasCompact) {
+        closeMenus();
+      }
+    }
+    function toggleNav(on) {
+      const tb = $("#toolbar");
+      const open = on != null ? on : !tb.classList.contains("nav-open");
+      tb.classList.toggle("nav-open", open);
+      $("#btnMenu").classList.toggle("active", open);
+      if (open) closeMenus();
+    }
+
+    /* ============================================================================
+   Keyboard actions
+   ========================================================================== */
+    function zoomBy(factor) {
+      const cy = AppState.cy;
+      const z = Math.min(4, Math.max(0.1, cy.zoom() * factor));
+      cy.zoom({
+        level: z,
+        renderedPosition: { x: cy.width() / 2, y: cy.height() / 2 },
+      });
+    }
+    function selectAllElements() {
+      const cy = AppState.cy;
+      cy.elements().not(":parent").select();
+      updateBulkBar();
+      updateAnnoHandles();
+    }
+    // Duplicate the current selection (device nodes + annotations) with an offset.
+    function duplicateSelection() {
+      const cy = AppState.cy;
+      const nodes = cy.nodes(":selected").filter((n) => n.data("node"));
+      const annos = cy.nodes(":selected.anno");
+      if (!nodes.length && !annos.length) {
+        toast("Nothing to duplicate");
+        return;
+      }
+      pushSnapshot();
+      const OFF = 40;
+      const newIds = [];
+      nodes.forEach((n) => {
+        const src = n.data("node");
+        const copy = clone(src);
+        copy.id = uid("n");
+        copy.name = src.name + " copy";
+        copy.x = (src.x != null ? src.x : Math.round(n.position().x)) + OFF;
+        copy.y = (src.y != null ? src.y : Math.round(n.position().y)) + OFF;
+        delete copy._warn;
+        AppState.project.nodes.push(copy);
+        newIds.push(copy.id);
+      });
+      annos.forEach((n) => {
+        const src = annoById(n.id());
+        if (!src) return;
+        const copy = normAnnotation(clone(src));
+        copy.id = uid("a");
+        copy.x = src.x + OFF;
+        copy.y = src.y + OFF;
+        AppState.project.annotations.push(copy);
+        newIds.push(copy.id);
+      });
+      fullRender();
+      cy.$(":selected").unselect();
+      newIds.forEach((id) => {
+        const el = cy.getElementById(id);
+        if (el && el.length) el.select();
+      });
+      updateBulkBar();
+      updateAnnoHandles();
+      toast("Duplicated " + newIds.length);
+    }
+    // Nudge selected nodes / annotations by a step in model units.
+    function nudgeSelection(dx, dy) {
+      const cy = AppState.cy;
+      const sel = cy.nodes(":selected").filter((n) => !n.isParent());
+      if (!sel.length) return;
+      sel.forEach((n) => {
+        const p = n.position();
+        n.position({ x: p.x + dx, y: p.y + dy });
+      });
+      persistPositions();
+      persistAnnotationPositions();
+      updateAnnoHandles();
+      pushSnapshotDebounced();
+      saveAutosave();
+    }
+    function openShortcuts() {
+      renderShortcuts();
+      openOverlay("shortcutsOverlay");
+    }
+    const SHORTCUTS = [
+      [
+        "Editing",
+        [
+          ["N", "Add node"],
+          ["D", "Draw-link mode"],
+          ["Ctrl/⌘ + D", "Duplicate selection"],
+          ["Ctrl/⌘ + A", "Select all"],
+          ["Delete / Backspace", "Delete selection"],
+          ["Arrows", "Nudge selection (Shift = ×10)"],
+          ["Ctrl/⌘ + Z", "Undo"],
+          ["Ctrl/⌘ + Y / Shift+Z", "Redo"],
+        ],
+      ],
+      [
+        "View",
+        [
+          ["F / 0", "Fit to screen"],
+          ["+ / −", "Zoom in / out"],
+          ["V", "Toggle logical / physical view"],
+          ["G", "Group by site"],
+          ["L", "Toggle legend"],
+          ["T", "Toggle theme"],
+        ],
+      ],
+      [
+        "Panels",
+        [
+          ["/", "Focus search"],
+          ["I", "Validation issues"],
+          ["Ctrl/⌘ + S", "Save project (JSON)"],
+          ["?", "This help"],
+          ["Esc", "Close panel / menu / cancel"],
+        ],
+      ],
+    ];
+    function renderShortcuts() {
+      $("#shortcutsBody").innerHTML = SHORTCUTS.map(
+        (group) =>
+          `<div class="sc-group"><h5>${esc(group[0])}</h5>` +
+          group[1]
+            .map(
+              (row) =>
+                `<div class="sc-row"><span class="sc-keys">${row[0]
+                  .split(" / ")
+                  .map((k) => `<span class="kbd">${esc(k)}</span>`)
+                  .join(" / ")}</span><span class="sc-desc">${esc(row[1])}</span></div>`,
+            )
+            .join("") +
+          `</div>`,
+      ).join("");
     }
 
     /* ============================================================================
@@ -3636,22 +5805,29 @@
         else exportImage(exp);
       });
 
-      $("#btnAddNode").onclick = () => addNode();
-      $("#btnDrawLink").onclick = () => toggleDrawMode();
-      $("#btnLayout").onclick = () => toggleMenu("layoutMenu");
-      $("#layoutMenu").addEventListener("click", (e) => {
-        const mi = e.target.closest(".mi[data-layout]");
-        if (!mi) return;
-        toggleMenu("layoutMenu");
-        runLayout(mi.dataset.layout, true);
+      // ---- Left tools panel (delegated) ----
+      $("#tools").addEventListener("click", (e) => {
+        const btn = e.target.closest("button");
+        if (!btn) return;
+        if (btn.dataset.add) doAdd(btn.dataset.add);
+        else if (btn.dataset.view) setView(btn.dataset.view);
+        else if (btn.dataset.layout) runLayout(btn.dataset.layout, true);
+        else if (btn.id === "toolDraw") toggleDrawMode();
+        else if (btn.id === "toolGroup") doGroupToggle();
+        else if (btn.id === "toolFit")
+          AppState.cy.fit(AppState.cy.elements(":visible"), 40);
       });
-      $("#btnGroup").onclick = () => {
-        AppState.ui.grouped = !AppState.ui.grouped;
-        $("#btnGroup").classList.toggle("active", AppState.ui.grouped);
-        fullRender({ layout: true });
+      $("#btnTools").onclick = () => toggleTools();
+      $("#toolsClose").onclick = () => toggleTools(false);
+      $("#toolsShow").onclick = () => toggleTools(true);
+      $("#locAddSite").onclick = () => {
+        closeOverlay("locationsOverlay");
+        addLocation("site", "");
       };
-      $("#btnFit").onclick = () =>
-        AppState.cy.fit(AppState.cy.elements(":visible"), 40);
+      $("#locImport").onclick = () => {
+        AppState._importLocations = true;
+        $("#fileCsv").click();
+      };
       $("#btnFilters").onclick = openFilters;
       $("#filtersClear").onclick = clearFilters;
       $("#btnOverlay").onclick = () => toggleMenu("overlayMenu");
@@ -3681,6 +5857,45 @@
       });
       markMenuActive("#overlayMenu", "data-overlay", "combined");
       $("#btnLegend").onclick = () => toggleLegend();
+      $("#legendShow").onclick = () => toggleLegend(true);
+
+      // hamburger drawer (compact mode)
+      $("#btnMenu").onclick = (e) => {
+        e.stopPropagation();
+        toggleNav();
+      };
+      // always-visible quick actions (compact mode)
+      $("#qAdd").onclick = () => addNode();
+      $("#qFit").onclick = () =>
+        AppState.cy.fit(AppState.cy.elements(":visible"), 40);
+      $("#qSearch").onclick = () => {
+        toggleNav(true);
+        setTimeout(() => {
+          const s = $("#search");
+          s.scrollIntoView({ block: "nearest" });
+          s.focus();
+        }, 30);
+      };
+      // collapse the drawer after a direct action or menu selection (but keep
+      // it open while a dropdown submenu is being navigated)
+      $("#tbItems").addEventListener("click", (e) => {
+        const tb = $("#toolbar");
+        if (!tb.classList.contains("compact")) return;
+        const mi = e.target.closest(".mi");
+        if (mi) {
+          if (
+            mi.dataset.exp ||
+            mi.dataset.layout ||
+            mi.dataset.overlay ||
+            mi.dataset.view ||
+            mi.dataset.add
+          )
+            toggleNav(false);
+          return;
+        }
+        const btn = e.target.closest(".btn");
+        if (btn && !btn.closest(".dropdown")) toggleNav(false);
+      });
       $("#btnTheme").onclick = toggleTheme;
       $("#btnUndo").onclick = undo;
       $("#btnRedo").onclick = redo;
@@ -3689,6 +5904,7 @@
         openOverlay("issuesOverlay");
       };
       $("#btnSettings").onclick = openSettings;
+      $("#btnShortcuts").onclick = openShortcuts;
 
       // search
       const search = $("#search");
@@ -3718,12 +5934,20 @@
         }),
       );
 
-      // global click closes menus/context
+      // global click closes menus/context/drawer
       document.addEventListener("click", (e) => {
-        if (!e.target.closest(".dropdown"))
-          $$(".menu").forEach((m) => m.classList.remove("open"));
+        if (!e.target.closest(".dropdown")) closeMenus();
         if (!e.target.closest("#contextMenu")) hideContext();
+        if (!e.target.closest("#toolbar")) toggleNav(false);
       });
+      // fixed menus are anchored to their trigger — re-close if the toolbar
+      // scrolls or the window resizes so they never float detached; also
+      // recompute whether the toolbar needs to collapse into the drawer.
+      window.addEventListener("resize", () => {
+        closeMenus();
+        updateToolbarMode();
+      });
+      $("#toolbar").addEventListener("scroll", closeMenus);
 
       // keyboard
       document.addEventListener("keydown", (e) => {
@@ -3734,6 +5958,8 @@
           if (AppState.ui.drawMode) toggleDrawMode(false);
           $$(".overlay.open").forEach((o) => closeOverlay(o.id));
           hideContext();
+          closeMenus();
+          toggleNav(false);
           closeDetail();
           return;
         }
@@ -3757,21 +5983,101 @@
           return;
         }
         if (inField) return;
-        if (e.key === "/") {
+        // an open modal captures shortcuts (Esc, handled above, still closes it)
+        if (document.querySelector(".overlay.open")) return;
+        const k = e.key;
+        const lower = k.length === 1 ? k.toLowerCase() : k;
+
+        // Ctrl/⌘ combos that shouldn't fire while typing (handled after inField)
+        if ((e.ctrlKey || e.metaKey) && lower === "a") {
+          e.preventDefault();
+          selectAllElements();
+          return;
+        }
+        if ((e.ctrlKey || e.metaKey) && lower === "d") {
+          e.preventDefault();
+          duplicateSelection();
+          return;
+        }
+        if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+        // Arrow-key nudging works even with a modal-less selection
+        if (k.startsWith("Arrow")) {
+          const step = e.shiftKey ? 10 : 1;
+          const map = {
+            ArrowUp: [0, -step],
+            ArrowDown: [0, step],
+            ArrowLeft: [-step, 0],
+            ArrowRight: [step, 0],
+          };
+          if (AppState.cy.nodes(":selected").length) {
+            e.preventDefault();
+            nudgeSelection(map[k][0], map[k][1]);
+          }
+          return;
+        }
+
+        if (k === "?") {
+          e.preventDefault();
+          openShortcuts();
+          return;
+        }
+        if (k === "/") {
           e.preventDefault();
           search.focus();
           return;
         }
-        if (e.key === "f" || e.key === "F") {
+        if (lower === "f" || k === "0") {
           AppState.cy.fit(AppState.cy.elements(":visible"), 40);
           return;
         }
-        if (e.key === "Delete" || e.key === "Backspace") {
+        if (k === "+" || k === "=") {
+          zoomBy(1.2);
+          return;
+        }
+        if (k === "-" || k === "_") {
+          zoomBy(1 / 1.2);
+          return;
+        }
+        if (lower === "n") {
+          addNode();
+          return;
+        }
+        if (lower === "d") {
+          toggleDrawMode();
+          return;
+        }
+        if (lower === "g") {
+          doGroupToggle();
+          return;
+        }
+        if (lower === "v") {
+          setView(AppState.ui.view === "physical" ? "logical" : "physical");
+          return;
+        }
+        if (lower === "l") {
+          toggleLegend();
+          return;
+        }
+        if (lower === "t") {
+          toggleTheme();
+          return;
+        }
+        if (lower === "i") {
+          renderIssues();
+          openOverlay("issuesOverlay");
+          return;
+        }
+        if (k === "Delete" || k === "Backspace") {
+          const selAnno = AppState.cy.nodes(":selected.anno");
           const selN = AppState.cy
             .nodes(":selected")
-            .filter((n) => !n.isParent());
+            .filter((n) => !n.isParent() && !n.hasClass("anno"));
           const selE = AppState.cy.edges(":selected");
-          if (selN.length > 1) {
+          if (selAnno.length) {
+            selAnno.forEach((a) => deleteAnnotation(a.id()));
+            closeDetail();
+          } else if (selN.length > 1) {
             bulkDelete();
           } else if (selN.length === 1) {
             deleteNode(selN[0].id());
@@ -3796,11 +6102,16 @@
       AppState.project = emptyProject();
       applyTheme();
       preloadIcons();
+      preloadIcons(Object.values(VENDOR_ICONS));
       initCy();
       wireUI();
       toggleLegend(true);
+      toggleTools(true);
+      setView("logical");
       fullRender();
       updateStatus();
+      updateToolbarMode();
+      syncToolStates();
       // expose for debugging / headless verification
       window.netviz = {
         AppState,
@@ -3810,6 +6121,8 @@
         runLayout,
         validate,
         ICONS,
+        VENDOR_ICONS,
+        VENDORS,
         fullRender,
         applyVisibility,
         undo,
@@ -3831,6 +6144,19 @@
         pngBase,
         compositeExport,
         exportImage,
+        setView,
+        addLocation,
+        deleteLocation,
+        openLocations,
+        renderLocations,
+        locChain,
+        locPathLabel,
+        normLocation,
+        addAnnotation,
+        deleteAnnotation,
+        annoBringToFront,
+        annoSendToBack,
+        normAnnotation,
       };
       console.log("netviz ready");
     }

@@ -1,6 +1,6 @@
 {
   "meta": {
-    "name": "Sample Network - JCC + RBG",
+    "name": "Sample Network - HQ + BR",
     "schema_version": 1,
     "author": "netviz",
     "created": "2026-07-13T00:00:00.000Z",
@@ -25,7 +25,8 @@
       "icon": "",
       "notes": "",
       "x": 283,
-      "y": -160
+      "y": -160,
+      "location": ""
     },
     {
       "name": "MPLS-CLOUD",
@@ -34,157 +35,168 @@
       "mgmt_ip": "",
       "site": "WAN",
       "layer": "wan",
-      "vendor": "STC",
+      "vendor": "Carrier-A",
       "model": "",
       "icon": "",
       "notes": "",
       "x": 224,
-      "y": -228
+      "y": -228,
+      "location": ""
     },
     {
-      "name": "JCC-FGT01",
-      "id": "JCC-FGT01",
+      "name": "HQ-FGT01",
+      "id": "HQ-FGT01",
       "type": "firewall",
       "mgmt_ip": "10.10.0.1",
-      "site": "JCC",
+      "site": "HQ",
       "layer": "edge",
       "vendor": "Fortinet",
       "model": "FortiGate-200F",
       "icon": "",
       "notes": "",
       "x": 97,
-      "y": -176
+      "y": -176,
+      "location": "cab-hq-a"
     },
     {
-      "name": "JCC-CORE01",
-      "id": "JCC-CORE01",
+      "name": "HQ-CORE01",
+      "id": "HQ-CORE01",
       "type": "l3-switch",
       "mgmt_ip": "10.10.0.2",
-      "site": "JCC",
+      "site": "HQ",
       "layer": "core",
       "vendor": "Cisco",
       "model": "WS-C3750G",
       "icon": "",
       "notes": "",
       "x": 13,
-      "y": -33
+      "y": -33,
+      "location": "cab-hq-a"
     },
     {
-      "name": "JCC-ACC-SW01",
-      "id": "JCC-ACC-SW01",
+      "name": "HQ-ACC-SW01",
+      "id": "HQ-ACC-SW01",
       "type": "l2-switch",
       "mgmt_ip": "10.10.0.11",
-      "site": "JCC",
+      "site": "HQ",
       "layer": "access",
       "vendor": "Cisco",
       "model": "WS-C2960",
       "icon": "",
       "notes": "",
       "x": -121,
-      "y": -123
+      "y": -123,
+      "location": "cab-hq-a"
     },
     {
-      "name": "JCC-ACC-SW02",
-      "id": "JCC-ACC-SW02",
+      "name": "HQ-ACC-SW02",
+      "id": "HQ-ACC-SW02",
       "type": "l2-switch",
       "mgmt_ip": "10.10.0.12",
-      "site": "JCC",
+      "site": "HQ",
       "layer": "access",
       "vendor": "Cisco",
       "model": "WS-C2960",
       "icon": "",
       "notes": "",
       "x": -137,
-      "y": 59
+      "y": 59,
+      "location": "cab-hq-a"
     },
     {
-      "name": "JCC-ESX01",
-      "id": "JCC-ESX01",
+      "name": "HQ-ESX01",
+      "id": "HQ-ESX01",
       "type": "hypervisor",
       "mgmt_ip": "10.10.0.21",
-      "site": "JCC",
+      "site": "HQ",
       "layer": "access",
       "vendor": "VMware",
       "model": "ESXi 7",
       "icon": "",
       "notes": "",
       "x": -107,
-      "y": -11
+      "y": -11,
+      "location": "cab-hq-b"
     },
     {
-      "name": "JCC-VEEAM01",
-      "id": "JCC-VEEAM01",
+      "name": "HQ-VEEAM01",
+      "id": "HQ-VEEAM01",
       "type": "server",
       "mgmt_ip": "10.10.0.31",
-      "site": "JCC",
+      "site": "HQ",
       "layer": "access",
       "vendor": "Dell",
       "model": "R740",
       "icon": "",
       "notes": "",
       "x": -176,
-      "y": -51
+      "y": -51,
+      "location": "cab-hq-b"
     },
     {
-      "name": "JCC-AP01",
-      "id": "JCC-AP01",
+      "name": "HQ-AP01",
+      "id": "HQ-AP01",
       "type": "access-point",
       "mgmt_ip": "10.10.0.41",
-      "site": "JCC",
+      "site": "HQ",
       "layer": "access",
       "vendor": "Cisco",
       "model": "AIR-2802",
       "icon": "",
       "notes": "",
       "x": -283,
-      "y": -118
+      "y": -118,
+      "location": "cab-hq-a"
     },
     {
-      "name": "RBG-FGT01",
-      "id": "RBG-FGT01",
+      "name": "BR-FGT01",
+      "id": "BR-FGT01",
       "type": "firewall",
       "mgmt_ip": "10.20.0.1",
-      "site": "RBG",
+      "site": "BR",
       "layer": "edge",
       "vendor": "Fortinet",
       "model": "FortiGate-100F",
       "icon": "",
       "notes": "",
       "x": 179,
-      "y": -47
+      "y": -47,
+      "location": "cab-br-a"
     },
     {
-      "name": "RBG-CORE01",
-      "id": "RBG-CORE01",
+      "name": "BR-CORE01",
+      "id": "BR-CORE01",
       "type": "l3-switch",
       "mgmt_ip": "10.20.0.2",
-      "site": "RBG",
+      "site": "BR",
       "layer": "core",
       "vendor": "Cisco",
       "model": "WS-C3750G",
       "icon": "",
       "notes": "",
       "x": 118,
-      "y": 103
+      "y": 103,
+      "location": "cab-br-a"
     },
     {
-      "name": "RBG-ACC-SW01",
-      "id": "RBG-ACC-SW01",
+      "name": "BR-ACC-SW01",
+      "id": "BR-ACC-SW01",
       "type": "l2-switch",
       "mgmt_ip": "10.20.0.11",
-      "site": "RBG",
+      "site": "BR",
       "layer": "access",
       "vendor": "Cisco",
       "model": "WS-C2960",
       "icon": "",
       "notes": "",
       "x": 118,
-      "y": 261
+      "y": 261,
+      "location": "cab-br-a"
     }
   ],
   "links": [
     {
-      "source": "JCC-FGT01",
+      "source": "HQ-FGT01",
       "target": "INTERNET",
       "id": "l-demo-01",
       "source_if": "wan1",
@@ -202,7 +214,7 @@
       "description": "Primary internet"
     },
     {
-      "source": "JCC-FGT01",
+      "source": "HQ-FGT01",
       "target": "MPLS-CLOUD",
       "id": "l-demo-02",
       "source_if": "wan2",
@@ -215,12 +227,12 @@
       "subnet": "10.99.1.0/30",
       "status": "up",
       "bandwidth_committed": "",
-      "provider": "STC",
-      "circuit_id": "MPLS-JCC-01",
+      "provider": "Carrier-A",
+      "circuit_id": "MPLS-HQ-01",
       "description": "MPLS access circuit"
     },
     {
-      "source": "RBG-FGT01",
+      "source": "BR-FGT01",
       "target": "MPLS-CLOUD",
       "id": "l-demo-03",
       "source_if": "wan2",
@@ -233,12 +245,12 @@
       "subnet": "10.99.2.0/30",
       "status": "up",
       "bandwidth_committed": "",
-      "provider": "STC",
-      "circuit_id": "MPLS-RBG-01",
+      "provider": "Carrier-A",
+      "circuit_id": "MPLS-BR-01",
       "description": "MPLS access circuit"
     },
     {
-      "source": "RBG-FGT01",
+      "source": "BR-FGT01",
       "target": "INTERNET",
       "id": "l-demo-04",
       "source_if": "wan1",
@@ -253,11 +265,11 @@
       "bandwidth_committed": "",
       "provider": "ISP-B",
       "circuit_id": "CKT-2001",
-      "description": "RBG internet"
+      "description": "BR internet"
     },
     {
-      "source": "JCC-FGT01",
-      "target": "RBG-FGT01",
+      "source": "HQ-FGT01",
+      "target": "BR-FGT01",
       "id": "l-demo-05",
       "source_if": "",
       "target_if": "",
@@ -269,13 +281,13 @@
       "subnet": "10.255.0.0/30",
       "status": "up",
       "bandwidth_committed": "",
-      "provider": "STC",
+      "provider": "Carrier-A",
       "circuit_id": "",
       "description": "BGP over MPLS"
     },
     {
-      "source": "JCC-FGT01",
-      "target": "RBG-FGT01",
+      "source": "HQ-FGT01",
+      "target": "BR-FGT01",
       "id": "l-demo-06",
       "source_if": "",
       "target_if": "",
@@ -292,8 +304,8 @@
       "description": "IPSec failover tunnel over internet"
     },
     {
-      "source": "JCC-FGT01",
-      "target": "JCC-CORE01",
+      "source": "HQ-FGT01",
+      "target": "HQ-CORE01",
       "id": "l-demo-07",
       "source_if": "port1",
       "target_if": "Gi1/0/48",
@@ -310,8 +322,8 @@
       "description": "Core uplink trunk"
     },
     {
-      "source": "JCC-CORE01",
-      "target": "JCC-ACC-SW01",
+      "source": "HQ-CORE01",
+      "target": "HQ-ACC-SW01",
       "id": "l-demo-08",
       "source_if": "Gi1/0/1",
       "target_if": "Gi0/48",
@@ -328,8 +340,8 @@
       "description": "Access uplink"
     },
     {
-      "source": "JCC-CORE01",
-      "target": "JCC-ACC-SW02",
+      "source": "HQ-CORE01",
+      "target": "HQ-ACC-SW02",
       "id": "l-demo-09",
       "source_if": "Gi1/0/2",
       "target_if": "Gi0/48",
@@ -346,8 +358,8 @@
       "description": "Access uplink"
     },
     {
-      "source": "JCC-ACC-SW01",
-      "target": "JCC-ACC-SW02",
+      "source": "HQ-ACC-SW01",
+      "target": "HQ-ACC-SW02",
       "id": "l-demo-10",
       "source_if": "Gi0/47",
       "target_if": "Gi0/47",
@@ -364,8 +376,8 @@
       "description": "Redundant inter-switch link"
     },
     {
-      "source": "JCC-CORE01",
-      "target": "JCC-ESX01",
+      "source": "HQ-CORE01",
+      "target": "HQ-ESX01",
       "id": "l-demo-11",
       "source_if": "Gi1/0/10",
       "target_if": "vmnic0",
@@ -382,8 +394,8 @@
       "description": "ESXi trunk"
     },
     {
-      "source": "JCC-CORE01",
-      "target": "JCC-VEEAM01",
+      "source": "HQ-CORE01",
+      "target": "HQ-VEEAM01",
       "id": "l-demo-12",
       "source_if": "Gi1/0/11",
       "target_if": "eth0",
@@ -400,8 +412,8 @@
       "description": "Backup server"
     },
     {
-      "source": "JCC-ACC-SW01",
-      "target": "JCC-AP01",
+      "source": "HQ-ACC-SW01",
+      "target": "HQ-AP01",
       "id": "l-demo-13",
       "source_if": "Gi0/10",
       "target_if": "eth0",
@@ -418,8 +430,8 @@
       "description": "AP trunk"
     },
     {
-      "source": "RBG-FGT01",
-      "target": "RBG-CORE01",
+      "source": "BR-FGT01",
+      "target": "BR-CORE01",
       "id": "l-demo-14",
       "source_if": "port1",
       "target_if": "Gi1/0/48",
@@ -436,8 +448,8 @@
       "description": "Core uplink"
     },
     {
-      "source": "RBG-CORE01",
-      "target": "RBG-ACC-SW01",
+      "source": "BR-CORE01",
+      "target": "BR-ACC-SW01",
       "id": "l-demo-15",
       "source_if": "Gi1/0/1",
       "target_if": "Gi0/48",
@@ -454,8 +466,8 @@
       "description": "Access uplink"
     },
     {
-      "source": "JCC-CORE01",
-      "target": "RBG-CORE01",
+      "source": "HQ-CORE01",
+      "target": "BR-CORE01",
       "id": "l-demo-16",
       "source_if": "",
       "target_if": "",
@@ -472,5 +484,111 @@
       "description": "Future L3 DCI"
     }
   ],
-  "groups": []
+  "groups": [],
+  "locations": [
+    {
+      "kind": "site",
+      "id": "site-hq",
+      "name": "HQ",
+      "parent": "",
+      "code": "HQ",
+      "address": "1 Example Ave",
+      "city": "Metro City",
+      "region": "Metro City",
+      "country": "Example Country",
+      "latitude": "",
+      "longitude": "",
+      "contact": "NOC",
+      "notes": "Primary data center site"
+    },
+    {
+      "kind": "building",
+      "id": "bld-hq-1",
+      "name": "HQ Building",
+      "parent": "site-hq",
+      "code": "B1",
+      "address": "Building 1",
+      "floors_count": "3",
+      "notes": ""
+    },
+    {
+      "kind": "floor",
+      "id": "flr-hq-1",
+      "name": "Ground Floor",
+      "parent": "bld-hq-1",
+      "level": "0",
+      "elevation": "",
+      "notes": ""
+    },
+    {
+      "kind": "cabinet",
+      "id": "cab-hq-a",
+      "name": "Rack A",
+      "parent": "flr-hq-1",
+      "code": "HQ-RK-A",
+      "row": "1",
+      "position": "A",
+      "ru": "42",
+      "power": "2x16A",
+      "notes": "Network core rack"
+    },
+    {
+      "kind": "cabinet",
+      "id": "cab-hq-b",
+      "name": "Rack B",
+      "parent": "flr-hq-1",
+      "code": "HQ-RK-B",
+      "row": "1",
+      "position": "B",
+      "ru": "42",
+      "power": "2x16A",
+      "notes": "Compute rack"
+    },
+    {
+      "kind": "site",
+      "id": "site-br",
+      "name": "BR",
+      "parent": "",
+      "code": "BR",
+      "address": "",
+      "city": "Remote City",
+      "region": "Remote City",
+      "country": "Example Country",
+      "latitude": "",
+      "longitude": "",
+      "contact": "",
+      "notes": "Branch site"
+    },
+    {
+      "kind": "building",
+      "id": "bld-br-1",
+      "name": "BR Branch",
+      "parent": "site-br",
+      "code": "B1",
+      "address": "",
+      "floors_count": "1",
+      "notes": ""
+    },
+    {
+      "kind": "floor",
+      "id": "flr-br-1",
+      "name": "Floor 1",
+      "parent": "bld-br-1",
+      "level": "1",
+      "elevation": "",
+      "notes": ""
+    },
+    {
+      "kind": "cabinet",
+      "id": "cab-br-a",
+      "name": "Rack A",
+      "parent": "flr-br-1",
+      "code": "BR-RK-A",
+      "row": "1",
+      "position": "A",
+      "ru": "24",
+      "power": "1x16A",
+      "notes": "Comms rack"
+    }
+  ]
 }

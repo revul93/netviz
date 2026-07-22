@@ -1,5 +1,7 @@
 # netviz — Network Diagram Automation & Documentation
 
+**🔗 Live demo: https://revul93.github.io/netviz/**
+
 netviz is a single-file, offline-capable web application for documenting network
 topologies. You feed it link/node/location data (CSV, JSON, or YAML), it renders an
 interactive, richly encoded topology graph, lets you edit everything in-app — including
@@ -120,7 +122,7 @@ browser).
 - **Validation panel** — never blocks; warns about duplicate link IDs, duplicate
   interface pairs, coerced unknown enum values, malformed subnet/VLAN strings,
   self-loops, STP-blocked routed links, and tunnels with no underlying physical path.
-- **Dark theme** by default with a light-theme toggle.
+- **Light theme** by default with a dark-theme toggle.
 
 ---
 
@@ -230,7 +232,7 @@ Saved projects are JSON with this shape:
 ```json
 {
   "meta": { "name": "", "schema_version": 1, "author": "", "created": "", "modified": "" },
-  "settings": { "theme": "dark", "layout": "fcose", "icon_map": {}, "custom_icons": {} },
+  "settings": { "theme": "light", "layout": "fcose", "icon_map": {}, "custom_icons": {} },
   "nodes": [],
   "links": [],
   "locations": [],

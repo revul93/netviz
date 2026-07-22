@@ -2302,7 +2302,7 @@
     const AppState = {
       project: null,
       ui: {
-        theme: "dark",
+        theme: "light",
         layout: "fcose",
         view: "logical",
         overlay: "combined",
@@ -2343,7 +2343,7 @@
           modified: now,
         },
         settings: {
-          theme: "dark",
+          theme: "light",
           layout: "fcose",
           icon_map: {},
           custom_icons: {},
@@ -4664,7 +4664,7 @@
         preloadIcons(Object.values(p.settings.custom_icons));
       AppState.undo = [];
       AppState.redo = [];
-      AppState.ui.theme = p.settings.theme || "dark";
+      AppState.ui.theme = p.settings.theme || "light";
       applyTheme();
       AppState.ui.layout = p.settings.layout || "fcose";
       AppState.ui.selectedId = null;
